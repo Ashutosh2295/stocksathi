@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <defs>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="shineGrad" cx="50%" cy="30%">
+      <stop offset="0%" style="stop-color:#fef3c7;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+  <!-- Badge outer circle -->
+  <circle cx="12" cy="12" r="9" fill="url(#badgeGrad)" opacity="0.3" stroke="url(#badgeGrad)" stroke-width="2"/>
+  <!-- Badge inner circle -->
+  <circle cx="12" cy="12" r="7" fill="url(#badgeGrad)" opacity="0.5" stroke="#f59e0b" stroke-width="1.5"/>
+  <!-- Star emblem -->
+  <path d="M 12 6 L 13.5 10 L 17.5 10 L 14.5 12.5 L 15.5 16.5 L 12 14 L 8.5 16.5 L 9.5 12.5 L 6.5 10 L 10.5 10 Z" fill="#fbbf24" stroke="#d97706" stroke-width="1"/>
+  <!-- Shine effect -->
+  <circle cx="12" cy="9" r="4" fill="url(#shineGrad)" opacity="0.4"/>
+  <!-- Decorative points -->
+  <circle cx="12" cy="3.5" r="0.8" fill="#fbbf24"/>
+  <circle cx="20.5" cy="12" r="0.8" fill="#fbbf24"/>
+  <circle cx="12" cy="20.5" r="0.8" fill="#fbbf24"/>
+  <circle cx="3.5" cy="12" r="0.8" fill="#fbbf24"/>
+</svg>

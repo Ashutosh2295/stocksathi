@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Dashboard - Stocksathi</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/components.css">
+    <link rel="stylesheet" href="../css/nav-dropdown.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f7fa;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: #fff;
+            border-right: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: center;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #0d9488, #0f766e);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+            margin: 0 auto 12px;
+        }
+
+        .sidebar-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            margin-bottom: 4px;
+            border-radius: 8px;
+            color: #6b7280;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover {
+            background: #f3f4f6;
+            color: #0d9488;
+        }
+
+        .nav-item.active {
+            background: #ecfdf5;
+            color: #0d9488;
+            font-weight: 500;
+        }
+
+        .nav-icon {
+            margin-right: 12px;
+            font-size: 20px;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: #0d9488;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: #111827;
+            font-size: 14px;
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .menu-toggle {
+            display: none;
+        }
+
+        .content-wrapper {
+            padding: 24px;
+        }
+
+        .dashboard-header {
+            margin-bottom: 32px;
+        }
+
+        .dashboard-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .dashboard-subtitle {
+            color: #6b7280;
+            font-size: 16px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            border-left: 4px solid #0d9488;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .action-btn {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid #e5e7eb;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .action-btn:hover {
+            border-color: #0d9488;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.1);
+        }
+
+        .action-icon {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+
+        .card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+
+        .card h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: #6b7280;
+            border: 1px solid #e5e7eb;
+        }
+
+        .btn-ghost:hover {
+            background: #f3f4f6;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">SS</div>
+                <h2 class="sidebar-title">Stocksathi</h2>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item active">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+
+                <a href="../pages/sales.html" class="nav-item">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-text">Create Invoice</span>
+                </a>
+
+                <a href="../pages/my-sales.html" class="nav-item">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">My Sales</span>
+                </a>
+
+                <a href="../pages/products.html" class="nav-item">
+                    <span class="nav-icon">📦</span>
+                    <span class="nav-text">View Products</span>
+                </a>
+
+                <a href="../pages/customers.html" class="nav-item">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">Customers</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">S</div>
+                    <div class="user-details">
+                        <div class="user-name" id="headerUserName">Sales User</div>
+                        <div class="user-role">Sales Role</div>
+                    </div>
+                </div>
+                <button class="btn btn-ghost w-full" id="sidebarLogoutBtn">Logout</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <h1>Sales Dashboard</h1>
+            </header>
+
+            <div class="content-wrapper">
+                <div class="dashboard-header">
+                    <h2 class="dashboard-title">Welcome Back! 👋</h2>
+                    <p class="dashboard-subtitle">Here's your sales performance overview</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="todaySales">0</div>
+                        <div class="stat-label">Today's Sales</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="thisWeekSales">0</div>
+                        <div class="stat-label">This Week</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="thisMonthSales">0</div>
+                        <div class="stat-label">This Month</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalSales">0</div>
+                        <div class="stat-label">Total Sales</div>
+                    </div>
+                </div>
+
+                <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 16px; color: #111827;">Quick Actions</h3>
+                <div class="quick-actions">
+                    <div class="action-btn" onclick="location.href='../pages/sales.html'">
+                        <div class="action-icon">📝</div>
+                        <div style="font-weight: 500;">Create Invoice</div>
+                    </div>
+                    <div class="action-btn" onclick="location.href='../pages/customers.html'">
+                        <div class="action-icon">👥</div>
+                        <div style="font-weight: 500;">View Customers</div>
+                    </div>
+                    <div class="action-btn" onclick="location.href='../pages/products.html'">
+                        <div class="action-icon">📦</div>
+                        <div style="font-weight: 500;">View Products</div>
+                    </div>
+                    <div class="action-btn" onclick="location.href='../pages/my-sales.html'">
+                        <div class="action-icon">📋</div>
+                        <div style="font-weight: 500;">My Transactions</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Recent Invoices</h3>
+                    <div id="recentInvoices">
+                        <p style="text-align: center; color: #6b7280; padding: 40px;">
+                            No invoices yet. Create your first invoice to get started!
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/role-manager.js"></script>
+    <script src="../js/crud-operations.js"></script>
+    <script src="../js/app.js"></script>
+
+    <script>
+        // Load sales dashboard data
+        async function loadSalesDashboard() {
+            try {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const user = window.firebaseAuth?.currentUser;
+                if (!user) {
+                    console.log('User not logged in yet');
+                    return;
+                }
+
+                // Get user's sales
+                const sales = await window.crudOperations.getAll('sales').catch(() => []);
+                const userSales = sales.filter(sale => sale.createdBy === user.uid);
+
+                // Calculate stats
+                const today = new Date().toDateString();
+                const thisWeek = getWeekStart();
+                const thisMonth = getMonthStart();
+
+                const todaySales = userSales.filter(s => {
+                    const saleDate = s.createdAt?.toDate ? s.createdAt.toDate() : new Date(s.createdAt);
+                    return new Date(saleDate).toDateString() === today;
+                });
+
+                const weekSales = userSales.filter(s => {
+                    const saleDate = s.createdAt?.toDate ? s.createdAt.toDate() : new Date(s.createdAt);
+                    return new Date(saleDate) >= thisWeek;
+                });
+
+                const monthSales = userSales.filter(s => {
+                    const saleDate = s.createdAt?.toDate ? s.createdAt.toDate() : new Date(s.createdAt);
+                    return new Date(saleDate) >= thisMonth;
+                });
+
+                document.getElementById('todaySales').textContent = todaySales.length;
+                document.getElementById('thisWeekSales').textContent = weekSales.length;
+                document.getElementById('thisMonthSales').textContent = monthSales.length;
+                document.getElementById('totalSales').textContent = userSales.length;
+
+                console.log('✅ Sales dashboard loaded');
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        function getWeekStart() {
+            const date = new Date();
+            date.setDate(date.getDate() - date.getDay());
+            date.setHours(0, 0, 0, 0);
+            return date;
+        }
+
+        function getMonthStart() {
+            const date = new Date();
+            date.setDate(1);
+            date.setHours(0, 0, 0, 0);
+            return date;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(loadSalesDashboard, 1500);
+        });
+
+        // Logout handler
+        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    await window.firebaseAuth.signOut();
+                    localStorage.removeItem('stocksathi_user');
+                    window.location.href = '../pages/login.html';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    alert('Logout failed');
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

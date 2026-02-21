@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <defs>
+    <linearGradient id="settingsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#64748b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Outer gear circle -->
+  <circle cx="12" cy="12" r="8" fill="none" stroke="url(#settingsGrad)" stroke-width="1.5"/>
+  <!-- Inner gear circle -->
+  <circle cx="12" cy="12" r="4" fill="url(#settingsGrad)" opacity="0.4" stroke="#3b82f6" stroke-width="1.5"/>
+  <!-- Center circle -->
+  <circle cx="12" cy="12" r="2" fill="#3b82f6" opacity="0.7"/>
+  <!-- Gear teeth (8 teeth) -->
+  <rect x="11" y="2.5" width="2" height="2.5" rx="0.5" fill="url(#settingsGrad)" opacity="0.7"/>
+  <rect x="11" y="19" width="2" height="2.5" rx="0.5" fill="url(#settingsGrad)" opacity="0.7"/>
+  <rect x="2.5" y="11" width="2.5" height="2" rx="0.5" fill="url(#settingsGrad)" opacity="0.7"/>
+  <rect x="19" y="11" width="2.5" height="2" rx="0.5" fill="url(#settingsGrad)" opacity="0.7"/>
+  <!-- Diagonal teeth -->
+  <rect x="5.5" y="5.5" width="1.8" height="1.8" rx="0.4" fill="url(#settingsGrad)" opacity="0.7" transform="rotate(45 6.4 6.4)"/>
+  <rect x="16.7" y="5.5" width="1.8" height="1.8" rx="0.4" fill="url(#settingsGrad)" opacity="0.7" transform="rotate(45 17.6 6.4)"/>
+  <rect x="5.5" y="16.7" width="1.8" height="1.8" rx="0.4" fill="url(#settingsGrad)" opacity="0.7" transform="rotate(45 6.4 17.6)"/>
+  <rect x="16.7" y="16.7" width="1.8" height="1.8" rx="0.4" fill="url(#settingsGrad)" opacity="0.7" transform="rotate(45 17.6 17.6)"/>
+</svg>

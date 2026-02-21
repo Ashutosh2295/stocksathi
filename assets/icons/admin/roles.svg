@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <defs>
+    <linearGradient id="rolesGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="shieldShine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e0f2fe;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0" />
+    </linearGradient>
+  </defs>
+  <!-- Shield background -->
+  <path d="M 12 3 L 20 6 L 20 12 Q 20 17 12 21 Q 4 17 4 12 L 4 6 Z" fill="url(#rolesGrad)" opacity="0.3" stroke="#3b82f6" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Shield inner -->
+  <path d="M 12 4.5 L 18.5 7 L 18.5 12 Q 18.5 16 12 19.5 Q 5.5 16 5.5 12 L 5.5 7 Z" fill="url(#rolesGrad)" opacity="0.4" stroke="#06b6d4" stroke-width="1"/>
+  <!-- Lock body -->
+  <rect x="10" y="13" width="4" height="4" rx="0.5" fill="#1e40af" opacity="0.7"/>
+  <!-- Lock keyhole -->
+  <circle cx="12" cy="14.5" r="0.6" fill="#3b82f6"/>
+  <line x1="12" y1="15.1" x2="12" y2="16" stroke="#3b82f6" stroke-width="0.6"/>
+  <!-- Lock shackle -->
+  <path d="M 10.5 13 L 10.5 11 Q 10.5 9.5 12 9.5 Q 13.5 9.5 13.5 11 L 13.5 13" fill="none" stroke="#1e40af" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Shield shine effect -->
+  <path d="M 8 7 Q 10 9 12 8 Q 13 7.5 14 9" fill="none"   stroke="url(#shieldShine)" stroke-width="1.5" opacity="0.5"/>
+</svg>

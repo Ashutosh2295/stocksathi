@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <defs>
+    <linearGradient id="transferGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Location A -->
+  <circle cx="6" cy="8" r="3" fill="url(#transferGrad)" opacity="0.3" stroke="url(#transferGrad)" stroke-width="1.5"/>
+  <circle cx="6" cy="8" r="1.5" fill="#3b82f6"/>
+  <!-- Location B -->
+  <circle cx="18" cy="16" r="3" fill="url(#transferGrad)" opacity="0.3" stroke="url(#transferGrad)" stroke-width="1.5"/>
+  <circle cx="18" cy="16" r="1.5" fill="#3b82f6"/>
+  <!-- Transfer arrow A to B -->
+  <path d="M 8 10 Q 13 13 16 15" fill="none" stroke="#06b6d4" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M 14 13 L 16 15 L 15 17" fill="none" stroke="#06b6d4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Transfer arrow B to A -->
+  <path d="M 16 14 Q 11 11 8 9" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M 10 11 L 8 9 L 9 7" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <defs>
+    <linearGradient id="factoryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#64748b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Factory building main -->
+  <rect x="5" y="10" width="14" height="11" rx="1" fill="url(#factoryGrad)" opacity="0.4" stroke="#64748b" stroke-width="1.5"/>
+  <!-- Roof -->
+  <path d="M 4 10 L 12 5 L 20 10" fill="url(#factoryGrad)" opacity="0.6" stroke="#475569" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Windows -->
+  <rect x="8" y="13" width="2" height="2" rx="0.3" fill="#3b82f6" opacity="0.5"/>
+  <rect x="11" y="13" width="2" height="2" rx="0.3" fill="#3b82f6" opacity="0.5"/>
+  <rect x="14" y="13" width="2" height="2" rx="0.3" fill="#3b82f6" opacity="0.5"/>
+  <!-- Chimney smoke stack -->
+  <rect x="15" y="3" width="2" height="7" rx="0.5" fill="#64748b" opacity="0.7" stroke="#475569" stroke-width="1"/>
+  <!-- Smoke -->
+  <circle cx="16" cy="2" r="1" fill="#94a3b8" opacity="0.5"/>
+  <circle cx="17.5" cy="1" r="0.8" fill="#94a3b8" opacity="0.4"/>
+  <!-- Door -->
+  <rect x="10" y="17" width="4" height="4" rx="0.5" fill="#1e293b" opacity="0.6"/>
+</svg>

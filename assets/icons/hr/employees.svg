@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <defs>
+    <linearGradient id="employeeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Head -->
+  <circle cx="12" cy="8" r="3.5" fill="url(#employeeGrad)" opacity="0.5" stroke="#3b82f6" stroke-width="1.5"/>
+  <!-- Body/Suit -->
+  <path d="M 6 21 Q 6 14 12 14 Q 18 14 18 21" fill="url(#employeeGrad)" opacity="0.4" stroke="#3b82f6" stroke-width="1.5"/>
+  <!-- Tie -->
+  <path d="M 12 14 L 11 17 L 12 21 L 13 17 Z" fill="#1e40af" opacity="0.7"/>
+  <!-- Briefcase -->
+  <rect x="16" y="16" width="5" height="4" rx="0.5" fill="#8b5cf6" opacity="0.6" stroke="#7c3aed" stroke-width="1.2"/>
+  <rect x="17.5" y="15.5" width="2" height="1" rx="0.3" fill="#7c3aed" opacity="0.8"/>
+  <!-- ID badge -->
+  <rect x="10" y="13" width="4" height="2.5" rx="0.5" fill="#e0e7ff" opacity="0.8" stroke="#6366f1" stroke-width="0.8"/>
+  <line x1="11" y1="14" x2="13" y2="14" stroke="#6366f1" stroke-width="0.5"/>
+  <line x1="11" y1="15" x2="12.5" y2="15" stroke="#6366f1" stroke-width="0.4"/>
+</svg>

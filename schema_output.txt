@@ -1,0 +1,93 @@
+
+
+Table: promotions
+Field                Type                 Null       Default             
+----------------------------------------------------------------------
+id                   int(11)              NO         NULL                
+name                 varchar(100)         NO         NULL                
+code                 varchar(50)          YES        NULL                
+type                 enum('percentage','fixed','buy_x_get_y') NO         NULL                
+value                decimal(10,2)        NO         NULL                
+min_purchase_amount  decimal(10,2)        YES        0.00                
+max_discount_amount  decimal(10,2)        YES        NULL                
+start_date           date                 NO         NULL                
+end_date             date                 NO         NULL                
+usage_limit          int(11)              YES        NULL                
+used_count           int(11)              YES        0                   
+applicable_products  text                 YES        NULL                
+applicable_categories text                 YES        NULL                
+description          text                 YES        NULL                
+status               enum('active','inactive','expired') YES        active              
+created_at           timestamp            NO         current_timestamp() 
+updated_at           timestamp            YES        NULL                
+
+
+Table: suppliers
+Field                Type                 Null       Default             
+----------------------------------------------------------------------
+id                   int(11)              NO         NULL                
+organization_id      int(11)              YES        NULL                
+name                 varchar(100)         NO         NULL                
+email                varchar(100)         YES        NULL                
+phone                varchar(20)          YES        NULL                
+company              varchar(100)         YES        NULL                
+address              text                 YES        NULL                
+city                 varchar(100)         YES        NULL                
+state                varchar(100)         YES        NULL                
+pincode              varchar(10)          YES        NULL                
+gst_number           varchar(50)          YES        NULL                
+bank_name            varchar(100)         YES        NULL                
+bank_account         varchar(50)          YES        NULL                
+ifsc_code            varchar(20)          YES        NULL                
+payment_terms        varchar(100)         YES        NULL                
+outstanding_balance  decimal(10,2)        YES        0.00                
+status               enum('active','inactive','blocked') YES        active              
+created_at           timestamp            NO         current_timestamp() 
+updated_at           timestamp            YES        NULL                
+
+
+Table: employees
+Field                Type                 Null       Default             
+----------------------------------------------------------------------
+id                   int(11)              NO         NULL                
+organization_id      int(11)              YES        NULL                
+employee_code        varchar(50)          NO         NULL                
+user_id              int(11)              YES        NULL                
+first_name           varchar(50)          NO         NULL                
+last_name            varchar(50)          NO         NULL                
+email                varchar(100)         NO         NULL                
+phone                varchar(20)          YES        NULL                
+department_id        int(11)              YES        NULL                
+designation          varchar(100)         YES        NULL                
+date_of_birth        date                 YES        NULL                
+date_of_joining      date                 YES        NULL                
+gender               enum('male','female','other') YES        NULL                
+address              text                 YES        NULL                
+city                 varchar(100)         YES        NULL                
+state                varchar(100)         YES        NULL                
+pincode              varchar(10)          YES        NULL                
+emergency_contact_name varchar(100)         YES        NULL                
+emergency_contact_phone varchar(20)          YES        NULL                
+salary               decimal(10,2)        YES        0.00                
+bank_name            varchar(100)         YES        NULL                
+bank_account         varchar(50)          YES        NULL                
+ifsc_code            varchar(20)          YES        NULL                
+pan_number           varchar(20)          YES        NULL                
+aadhar_number        varchar(20)          YES        NULL                
+status               enum('active','on_leave','resigned','terminated') YES        active              
+created_at           timestamp            NO         current_timestamp() 
+updated_at           timestamp            YES        NULL                
+
+
+Table: settings
+Field                Type                 Null       Default             
+----------------------------------------------------------------------
+id                   int(11)              NO         NULL                
+key                  varchar(100)         NO         NULL                
+value                text                 YES        NULL                
+type                 varchar(20)          YES        string              
+group                varchar(50)          YES        general             
+description          text                 YES        NULL                
+updated_at           timestamp            YES        NULL                
+
+Table organization_settings not found or error: Query execution failed: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'stocksathi.organization_settings' doesn't exist

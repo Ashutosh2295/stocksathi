@@ -1,0 +1,9 @@
+# Default `.htaccess`
+# Remove php_flags and AddType directives as they can cause 500 errors on shared hosts like InfinityFree.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Uncomment next lines if you want to force HTTPS once SSL is set up
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <defs>
+    <linearGradient id="quoteGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Document -->
+  <rect x="5" y="3" width="14" height="18" rx="1.5" fill="url(#quoteGrad)" opacity="0.2" stroke="#8b5cf6" stroke-width="1.5"/>
+  <!-- Quotation marks -->
+  <text x="8" y="9" font-family="Georgia, serif" font-size="5" font-weight="bold" fill="#8b5cf6" opacity="0.7">"</text>
+  <text x="15" y="9" font-family="Georgia, serif" font-size="5" font-weight="bold" fill="#8b5cf6" opacity="0.7">"</text>
+  <!-- Content lines -->
+  <line x1="8" y1="12" x2="16" y2="12" stroke="#a78bfa" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
+  <line x1="8" y1="14.5" x2="16" y2="14.5" stroke="#a78bfa" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
+  <line x1="8" y1="17" x2="13" y2="17" stroke="#a78bfa" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
+  <!-- Pen annotation -->
+  <path d="M 17 19 L 19 17 L 20 18 L 18 20 Z" fill="#3b82f6" opacity="0.7"/>
+  <line x1="17" y1="19" x2="20" y2="16" stroke="#1d4ed8" stroke-width="1"/>
+</svg>

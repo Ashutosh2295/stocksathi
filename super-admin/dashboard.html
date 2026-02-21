@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin - Stocksathi</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/components.css">
+    <link rel="stylesheet" href="../css/nav-dropdown.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">SS</div>
+                <h2 class="sidebar-title">Stocksathi</h2>
+                <p style="font-size: 12px; color: #888;">Super Admin</p>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item active">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="companies.html" class="nav-item">
+                    <span class="nav-icon">🏢</span>
+                    <span class="nav-text">Companies</span>
+                </a>
+                <a href="system-users.html" class="nav-item">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">All Users</span>
+                </a>
+                <a href="activity-logs.html" class="nav-item">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">Activity Logs</span>
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">SA</div>
+                    <div class="user-details">
+                        <div class="user-name" id="headerUserName">Super Admin</div>
+                        <div class="user-role">System Controller</div>
+                    </div>
+                </div>
+                <button class="btn btn-ghost w-full" id="sidebarLogoutBtn">Logout</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <h1>Super Admin Dashboard</h1>
+            </header>
+
+            <div class="content-wrapper">
+                <div class="stats-grid"
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 32px;">
+                    <div class="stat-card"
+                        style="background: var(--bg-card); padding: 24px; border-radius: 12px; border-left: 4px solid #0d9488;">
+                        <div style="font-size: 32px; font-weight: bold; margin-bottom: 8px;" id="totalCompanies">0</div>
+                        <div style="color: var(--text-secondary);">Total Companies</div>
+                    </div>
+                    <div class="stat-card"
+                        style="background: var(--bg-card); padding: 24px; border-radius: 12px; border-left: 4px solid #0d9488;">
+                        <div style="font-size: 32px; font-weight: bold; margin-bottom: 8px;" id="totalUsers">0</div>
+                        <div style="color: var(--text-secondary);">Total Users</div>
+                    </div>
+                    <div class="stat-card"
+                        style="background: var(--bg-card); padding: 24px; border-radius: 12px; border-left: 4px solid #0d9488;">
+                        <div style="font-size: 32px; font-weight: bold; margin-bottom: 8px;" id="activeCompanies">0
+                        </div>
+                        <div style="color: var(--text-secondary);">Active Companies</div>
+                    </div>
+                    <div class="stat-card"
+                        style="background: var(--bg-card); padding: 24px; border-radius: 12px; border-left: 4px solid #0d9488;">
+                        <div style="font-size: 32px; font-weight: bold; margin-bottom: 8px;" id="todayActivity">0</div>
+                        <div style="color: var(--text-secondary);">Today's Activity</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h3>Companies Overview</h3>
+                        <button class="btn btn-primary" onclick="showCreateCompany()">+ Create Company</button>
+                    </div>
+                    <div id="companiesList">
+                        <p style="text-align: center; padding: 40px; color: var(--text-secondary);">Loading companies...
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 24px;">
+                    <h3 style="margin-bottom: 16px;">Recent System Activity</h3>
+                    <div id="activityFeed">
+                        <p style="text-align: center; padding: 40px; color: var(--text-secondary);">Loading activity...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create Company Modal -->
+    <div class="modal" id="createCompanyModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New Company</h3>
+                <button class="modal-close" onclick="closeModal('createCompanyModal')">&times;</button>
+            </div>
+            <form id="companyForm">
+                <div class="form-group">
+                    <label>Company Name</label>
+                    <input type="text" class="form-control" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label>Admin Email</label>
+                    <input type="email" class="form-control" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select class="form-control" name="status">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost"
+                        onclick="closeModal('createCompanyModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Company</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/role-manager.js"></script>
+    <script src="../js/crud-operations.js"></script>
+    <script src="../js/app.js"></script>
+
+    <script>
+        async function loadDashboard() {
+            try {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const [companies, users, logs] = await Promise.all([
+                    window.crudOperations.getAll('companies').catch(() => []),
+                    window.crudOperations.getAll('users').catch(() => []),
+                    window.crudOperations.getAll('activity_logs').catch(() => [])
+                ]);
+
+                document.getElementById('totalCompanies').textContent = companies.length;
+                document.getElementById('totalUsers').textContent = users.length;
+                document.getElementById('activeCompanies').textContent = companies.filter(c => c.status === 'active').length;
+                document.getElementById('todayActivity').textContent = logs.filter(l => {
+                    return new Date(l.timestamp?.toDate()).toDateString() === new Date().toDateString();
+                }).length;
+
+                // Display companies
+                const companiesList = document.getElementById('companiesList');
+                if (companies.length === 0) {
+                    companiesList.innerHTML = '<p style="text-align: center; padding: 40px; color: var(--text-secondary);">No companies yet. Create your first one!</p>';
+                } else {
+                    companiesList.innerHTML = companies.map(c => `
+                        <div class="list-item" style="padding: 16px; border-bottom: 1px solid var(--border-light);">
+                            <div><strong>${c.name}</strong></div>
+                            <div style="color: var(--text-secondary); font-size: 14px;">Status: ${c.status || 'active'}</div>
+                        </div>
+                    `).join('');
+                }
+
+                console.log('✅ Dashboard loaded');
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        function showCreateCompany() {
+            document.getElementById('createCompanyModal').style.display = 'flex';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        document.getElementById('companyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const formData = new FormData(e.target);
+                const data = {
+                    name: formData.get('name'),
+                    adminEmail: formData.get('email'),
+                    status: formData.get('status'),
+                    createdBy: window.firebaseAuth.currentUser.uid
+                };
+
+                await window.crudOperations.create('companies', data);
+                alert('Company created successfully!');
+                closeModal('createCompanyModal');
+                e.target.reset();
+                loadDashboard();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(loadDashboard, 1000);
+        });
+    </script>
+</body>
+
+</html>

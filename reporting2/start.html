@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporting2 - Quick Start</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #0d9488, #0f766e);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 40px;
+            color: white;
+        }
+
+        h1 {
+            text-align: center;
+            color: #111827;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .info-box {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-box h3 {
+            color: #0d9488;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .info-box p {
+            color: #6b7280;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .features {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .features li {
+            padding: 10px 0;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .features li:before {
+            content: "✓";
+            background: #0d9488;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #0d9488, #0f766e);
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(13, 148, 136, 0.3);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #0d9488;
+            border: 2px solid #0d9488;
+        }
+
+        .btn-secondary:hover {
+            background: #f0fdfa;
+            box-shadow: 0 10px 20px rgba(13, 148, 136, 0.2);
+        }
+
+        .note {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .note strong {
+            color: #92400e;
+        }
+
+        .note p {
+            color: #78350f;
+            margin: 5px 0 0 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">📊</div>
+        <h1>Reporting2</h1>
+        <p class="subtitle">Modern Inventory Reporting System</p>
+
+        <div class="info-box">
+            <h3>🎨 Design System</h3>
+            <p>Built with the exact same color scheme as Stocksathi:</p>
+            <p><strong>Primary:</strong> #0d9488 (Teal) | <strong>Secondary:</strong> #3b82f6 (Blue)</p>
+        </div>
+
+        <div class="info-box">
+            <h3>✨ Working Features</h3>
+            <ul class="features">
+                <li>Login & Registration System</li>
+                <li>Interactive Dashboard with Charts</li>
+                <li>Product Management (CRUD)</li>
+                <li>Stock Management System</li>
+            </ul>
+        </div>
+
+        <a href="login.php" class="btn">🚀 Get Started - Login</a>
+        <a href="register.php" class="btn btn-secondary">📝 Create New Account</a>
+
+        <div class="note">
+            <strong>⚠️ Note:</strong>
+            <p>This is a frontend demo. Data is stored in browser session and will reset on page refresh. No backend or database integration.</p>
+        </div>
+    </div>
+</body>
+</html>

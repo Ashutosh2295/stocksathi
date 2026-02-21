@@ -1,0 +1,20 @@
+Starting script...
+Checking user: admin9 (ID: 1)
+-> User already has an employee record.
+Checking user: admin (ID: 6)
+-> Inserted new employee record for admin.
+Checking user: superadmin (ID: 7)
+-> User already has an employee record.
+Checking user: ashu (ID: 70)
+-> User already has an employee record.
+Checking user: test (ID: 71)
+-> User already has an employee record.
+Checking user: abc (ID: 72)
+-> User already has an employee record.
+Checking user: abcd (ID: 73)
+-> User already has an employee record.
+Checking user: jeel (ID: 74)
+-> User already has an employee record.
+Checking user: chuniya (ID: 75)
+-> User already has an employee record.
+Script finished.

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <defs>
+    <linearGradient id="kpiClockGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#64748b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Hourglass top -->
+  <path d="M 7 3 L 17 3 L 12 12 Z" fill="url(#kpiClockGrad)" opacity="0.3" stroke="#ef4444" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Hourglass bottom -->
+  <path d="M 7 21 L 17 21 L 12 12 Z" fill="url(#kpiClockGrad)" opacity="0.5" stroke="#ef4444" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Sand top -->
+  <path d="M 9 5 L 15 5 L 12 10 Z" fill="#ef4444" opacity="0.4"/>
+  <!-- Sand middle (flowing) -->
+  <circle cx="12" cy="12" r="0.8" fill="#ef4444" opacity="0.7"/>
+  <!-- Sand bottom -->
+  <path d="M 10 19 L 12 15 L 14 19 L 10 19 Z" fill="#ef4444" opacity="0.6"/>
+  <!-- Frame -->
+  <line x1="7" y1="3" x2="17" y2="3" stroke="#b91c1c" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="7" y1="21" x2="17" y2="21" stroke="#b91c1c" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- Time running out indicator -->
+  <path d="M 19 6 L 20.5 4.5 M 19 8 L 21 8 M 19 10 L 20.5 11" fill="none" stroke="#dc2626" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
+</svg>
