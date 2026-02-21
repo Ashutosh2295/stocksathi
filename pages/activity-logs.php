@@ -24,10 +24,11 @@ $moduleFilter = $_GET['module'] ?? '';
 $userFilter = $_GET['user'] ?? '';
 
 // Build query
+$orgActivityFilter = $orgIdPatch ? " AND al.organization_id = " . intval($orgIdPatch) : "";
 $query = "SELECT al.*, u.full_name as user_name
           FROM activity_logs al
           LEFT JOIN users u ON al.user_id = u.id
-          " . ($orgIdPatch ? " WHERE al.organization_id = " . intval($orgIdPatch) . " AND 1=1" : " WHERE 1=1");
+          WHERE 1=1" . $orgActivityFilter;
 $params = [];
 
 if (!empty($search)) {
@@ -49,7 +50,7 @@ if (!empty($userFilter)) {
 }
 
 // Get total count - build count query separately to avoid LIMIT/OFFSET issues
-$countQuery = "SELECT COUNT(*) as total FROM activity_logs al " . ($orgIdPatch ? " WHERE al.organization_id = " . intval($orgIdPatch) . " AND 1=1" : " WHERE 1=1");
+$countQuery = "SELECT COUNT(*) as total FROM activity_logs al WHERE 1=1" . $orgActivityFilter;
 $countParams = [];
 
 if (!empty($search)) {
@@ -80,9 +81,8 @@ $query .= " ORDER BY al.created_at DESC LIMIT " . (int)$limit . " OFFSET " . (in
 $activities = $db->query($query, $params);
 
 // Get unique modules for filter
-$modules = $db->query("SELECT DISTINCT module FROM activity_logs WHERE module IS NOT NULL ORDER BY module");
-// Get users for filter
-$users = $db->query("SELECT id, full_name FROM users WHERE full_name IS NOT NULL ORDER BY full_name");
+$modules = $db->query("SELECT DISTINCT module FROM activity_logs WHERE module IS NOT NULL" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . " ORDER BY module");
+$users = $db->query("SELECT id, full_name FROM users WHERE full_name IS NOT NULL" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . " ORDER BY full_name");
 ?>
 <!DOCTYPE html>
 <html lang="en">

@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $data = Validator::sanitize($_POST);
                 
-                $query = "INSERT INTO stores (name, code, address, city, state, pincode, phone, manager_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $query = "INSERT INTO stores (name, code, address, city, state, pincode, phone, manager_id, status, organization_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 $id = $db->execute($query, [
                     $data['name'],
                     $data['code'] ?? null,
@@ -45,7 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $data['pincode'] ?? null,
                     $data['phone'] ?? null,
                     !empty($data['manager_id']) ? (int)$data['manager_id'] : null,
-                    $data['status'] ?? 'active'
+                    $data['status'] ?? 'active',
+                    $orgIdPatch
                 ]);
                 
                 Session::setFlash('Store created successfully', 'success');
@@ -129,7 +130,7 @@ if ($editId) {
         "SELECT s.*, u.full_name as manager_name 
          FROM stores s 
          LEFT JOIN users u ON s.manager_id = u.id 
-         WHERE s.id = ?", 
+         WHERE " . ($orgIdPatch ? "s.organization_id = " . intval($orgIdPatch) . " AND " : "") . "s.id = ?", 
         [$editId]
     );
     if (!$editStore) {
@@ -144,7 +145,7 @@ $search = $_GET['search'] ?? '';
 $query = "SELECT s.*, u.full_name as manager_name, u.email as manager_email 
           FROM stores s
           LEFT JOIN users u ON s.manager_id = u.id
-          " . ($orgIdPatch ? " WHERE organization_id = " . intval($orgIdPatch) . " AND 1=1" : " WHERE 1=1");
+          " . ($orgIdPatch ? " WHERE s.organization_id = " . intval($orgIdPatch) . " AND 1=1" : " WHERE 1=1");
 $params = [];
 
 if (!empty($search)) {

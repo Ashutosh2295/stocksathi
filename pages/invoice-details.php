@@ -34,7 +34,7 @@ $invoice = $db->queryOne(
      FROM invoices i
      LEFT JOIN customers c ON i.customer_id = c.id
      LEFT JOIN payment_modes pm ON i.payment_mode_id = pm.id
-     WHERE {$orgFilter} i.id = ?",
+     WHERE " . ($orgIdPatch ? " i.organization_id = " . intval($orgIdPatch) . " AND " : "") . " i.id = ?",
     [$invoiceId]
 );
 
@@ -49,7 +49,7 @@ $items = $db->query(
     "SELECT ii.*, p.name as product_name, p.sku 
      FROM invoice_items ii
      LEFT JOIN products p ON ii.product_id = p.id
-     WHERE {$orgFilter} ii.invoice_id = ?
+     WHERE ii.invoice_id = ?
      ORDER BY ii.id",
     [$invoiceId]
 );

@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         try {
             // Check if product is used in invoices
             $invoiceCount = $db->queryOne(
-                "SELECT COUNT(*) as count FROM invoice_items WHERE {$orgFilter} product_id = ?",
+                "SELECT COUNT(*) as count FROM invoice_items WHERE product_id = ?",
                 [$id]
             );
             
@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             } else {
                 // Check if product has stock logs
                 $logCount = $db->queryOne(
-                    "SELECT COUNT(*) as count FROM stock_logs WHERE {$orgFilter} product_id = ?",
+                    "SELECT COUNT(*) as count FROM stock_logs WHERE product_id = ?",
                     [$id]
                 );
                 

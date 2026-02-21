@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $data = Validator::sanitize($_POST);
                 
-                $query = "INSERT INTO warehouses (name, code, address, city, state, pincode, phone, manager_id, capacity, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $query = "INSERT INTO warehouses (name, code, address, city, state, pincode, phone, manager_id, capacity, status, organization_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 $id = $db->execute($query, [
                     $data['name'],
                     $data['code'] ?? null,
@@ -46,7 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $data['phone'] ?? null,
                     !empty($data['manager_id']) ? (int)$data['manager_id'] : null,
                     !empty($data['capacity']) ? (int)$data['capacity'] : null,
-                    $data['status'] ?? 'active'
+                    $data['status'] ?? 'active',
+                    $orgIdPatch
                 ]);
                 
                 Session::setFlash('Warehouse created successfully', 'success');
@@ -131,7 +132,7 @@ if ($editId) {
         "SELECT w.*, u.full_name as manager_name 
          FROM warehouses w 
          LEFT JOIN users u ON w.manager_id = u.id 
-         WHERE w.id = ?", 
+         WHERE " . ($orgIdPatch ? "w.organization_id = " . intval($orgIdPatch) . " AND " : "") . "w.id = ?", 
         [$editId]
     );
     if (!$editWarehouse) {
@@ -151,7 +152,7 @@ try {
     $query = "SELECT w.*, u.full_name as manager_name, u.email as manager_email 
               FROM warehouses w
               LEFT JOIN users u ON w.manager_id = u.id
-              " . ($orgIdPatch ? " WHERE organization_id = " . intval($orgIdPatch) . " AND 1=1" : " WHERE 1=1");
+              " . ($orgIdPatch ? " WHERE w.organization_id = " . intval($orgIdPatch) . " AND 1=1" : " WHERE 1=1");
     $params = [];
 
     if (!empty($search)) {

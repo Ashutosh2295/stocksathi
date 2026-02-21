@@ -35,11 +35,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $data = Validator::sanitize($_POST);
                 
-                $query = "INSERT INTO categories (name, description, status) VALUES (?, ?, ?)";
+                $query = "INSERT INTO categories (name, description, status, organization_id) VALUES (?, ?, ?, ?)";
                 $id = $db->execute($query, [
                     $data['name'],
                     $data['description'] ?? null,
-                    $data['status'] ?? 'active'
+                    $data['status'] ?? 'active',
+                    $orgIdPatch
                 ]);
                 
                 Session::setFlash('Category created successfully', 'success');

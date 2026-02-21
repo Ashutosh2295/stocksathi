@@ -30,7 +30,7 @@ $product = $db->queryOne(
      FROM products p
      LEFT JOIN categories c ON p.category_id = c.id
      LEFT JOIN brands b ON p.brand_id = b.id
-     WHERE {$orgFilter} p.id = ?",
+     WHERE " . ($orgIdPatch ? " p.organization_id = " . intval($orgIdPatch) . " AND " : "") . " p.id = ?",
     [$productId]
 );
 

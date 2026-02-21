@@ -21,6 +21,7 @@ $query = "SELECT d.*,
           FROM departments d
           LEFT JOIN employees e ON d.id = e.department_id
           LEFT JOIN users u ON d.manager_id = u.id
+          " . ($orgIdPatch ? " WHERE d.organization_id = " . intval($orgIdPatch) : "") . "
           GROUP BY d.id, u.full_name
           ORDER BY d.id DESC";
 $departments = $db->query($query);

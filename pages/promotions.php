@@ -40,22 +40,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $couponCode = strtoupper(substr($data['name'], 0, 3) . rand(1000, 9999));
                     
                     // Use correct column names from schema
-                    $query = "INSERT INTO promotions (name, description, code, type, value, min_purchase_amount, max_discount_amount, start_date, end_date, usage_limit, status, created_by) 
-                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    $query = "INSERT INTO promotions (name, description, code, type, value, min_purchase_amount, max_discount_amount, start_date, end_date, usage_limit, status, created_by, organization_id) 
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                     
                     $db->execute($query, [
                         $data['name'],
                         $data['description'] ?? null,
                         $couponCode,
-                        $data['discount_type'], // Form field name kept same, mapped to 'type'
-                        (float)$data['discount_value'], // Mapped to 'value'
+                        $data['discount_type'],
+                        (float)$data['discount_value'],
                         (float)($data['min_purchase_amount'] ?? 0),
                         (float)($data['max_discount_amount'] ?? 0),
-                        $data['valid_from'] ?? date('Y-m-d'), // Mapped to 'start_date'
-                        $data['valid_until'] ?? date('Y-m-d', strtotime('+30 days')), // Mapped to 'end_date'
+                        $data['valid_from'] ?? date('Y-m-d'),
+                        $data['valid_until'] ?? date('Y-m-d', strtotime('+30 days')),
                         (int)($data['usage_limit'] ?? 0),
                         $data['status'] ?? 'active',
-                        $userId
+                        $userId,
+                        $orgIdPatch
                     ]);
                     
                     Session::setFlash('Promotion created successfully with code: ' . $couponCode, 'success');
@@ -110,7 +111,7 @@ if ($editId) {
 }
 
 try {
-    $promotions = $db->query("SELECT p.*, u.full_name as created_by_name FROM promotions p LEFT JOIN users u ON p.created_by = u.id ORDER BY p.created_at DESC");
+    $promotions = $db->query("SELECT p.*, u.full_name as created_by_name FROM promotions p LEFT JOIN users u ON p.created_by = u.id " . ($orgIdPatch ? " WHERE p.organization_id = " . intval($orgIdPatch) : "") . " ORDER BY p.created_at DESC");
 } catch (Exception $e) {
     $promotions = [];
 }

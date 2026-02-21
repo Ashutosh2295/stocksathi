@@ -68,8 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($emailExists) return;
 
             $db->execute(
-                "INSERT INTO employees (employee_code, user_id, first_name, last_name, email, status) VALUES (?, ?, ?, ?, ?, 'active')",
-                [$employeeCode, $userId, $firstName, $lastName, $email]
+                "INSERT INTO employees (employee_code, user_id, first_name, last_name, email, status, organization_id) VALUES (?, ?, ?, ?, ?, 'active', ?)",
+                [$employeeCode, $userId, $firstName, $lastName, $email, $orgIdPatch]
             );
         };
 
@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $dailyTarget = max(0, (float)$data['daily_sales_target']);
                     }
                     $dailyTarget = $dailyTarget > 0 ? $dailyTarget : (in_array($data['role'] ?? '', ['sales_executive', 'store_manager']) ? 10000 : 0);
-                    $query = "INSERT INTO users (username, full_name, email, password, role, status, daily_sales_target) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                    $query = "INSERT INTO users (username, full_name, email, password, role, status, daily_sales_target, organization_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
                     $id = $db->execute($query, [
                         $username,
                         $data['full_name'],
@@ -114,7 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $hashedPassword,
                         $data['role'],
                         $data['status'] ?? 'active',
-                        $dailyTarget
+                        $dailyTarget,
+                        $orgIdPatch
                     ]);
 
                     // Auto-link/create employee record for HR users
@@ -265,8 +266,8 @@ if ($editId) {
     unset($editUser['password']);
 }
 
-// Load all users
-$users = $db->query("SELECT id, full_name, email, role, status, last_login, created_at FROM users ORDER BY id DESC");
+// Load all users (filtered by organization)
+$users = $db->query("SELECT id, full_name, email, role, status, last_login, created_at FROM users " . ($orgIdPatch ? "WHERE organization_id = " . intval($orgIdPatch) : "") . " ORDER BY id DESC");
 
 // Load roles for dropdown
 try {

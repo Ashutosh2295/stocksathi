@@ -49,15 +49,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     try {
                         // Insert stock log for transfer
-                        $query = "INSERT INTO stock_logs (product_id, type, quantity, reference_type, from_location_id, to_location_id, notes, created_by) 
-                                 VALUES (?, 'transfer', ?, 'stock_transfer', ?, ?, ?, ?)";
+                        $query = "INSERT INTO stock_logs (product_id, type, quantity, reference_type, from_location_id, to_location_id, notes, created_by, organization_id) 
+                                 VALUES (?, 'transfer', ?, 'stock_transfer', ?, ?, ?, ?, ?)";
                         $logId = $db->execute($query, [
                             $data['product_id'],
                             (int)$data['quantity'],
                             $data['from_location_id'],
                             $data['to_location_id'],
                             $data['notes'] ?? null,
-                            $userId
+                            $userId,
+                            $orgIdPatch
                         ]);
                         
                         // Update product stock (transfer doesn't change total, but we track it)
@@ -83,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = 'Transfer ID is required';
                 $messageType = 'error';
             } else {
-                $affected = $db->execute("DELETE FROM stock_logs WHERE {$orgFilter} id = ? AND type = 'transfer'", [$id]);
+                $affected = $db->execute("DELETE FROM stock_logs WHERE " . ($orgIdPatch ? "organization_id = " . intval($orgIdPatch) . " AND " : "") . "id = ? AND type = 'transfer'", [$id]);
                 
                 if ($affected > 0) {
                     Session::setFlash('Stock transfer deleted successfully', 'success');
@@ -121,7 +122,7 @@ try {
           LEFT JOIN warehouses w1 ON sl.from_location_id = w1.id
           LEFT JOIN warehouses w2 ON sl.to_location_id = w2.id
           LEFT JOIN users u ON sl.created_by = u.id
-          WHERE sl.type = 'transfer'
+          WHERE sl.type = 'transfer'" . ($orgIdPatch ? " AND sl.organization_id = " . intval($orgIdPatch) : "") . "
           ORDER BY sl.created_at DESC";
     $transfers = $db->query($query);
 } catch (Exception $e) {

@@ -83,23 +83,23 @@ $targetProgress = 0;
 $targetRemaining = $salesTarget;
 
 try {
-    $totalInvoicesCount = (int)$db->queryOne("SELECT COUNT(*) as c FROM invoices WHERE created_by = ?", [$userId])['c'];
+    $totalInvoicesCount = (int)$db->queryOne("SELECT COUNT(*) as c FROM invoices WHERE created_by = ?" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : ""), [$userId])['c'];
 
     $rowToday = $db->queryOne("SELECT COUNT(*) as c, COALESCE(SUM(total_amount),0) as total FROM invoices WHERE {$orgFilter} DATE(invoice_date) = CURDATE() AND created_by = ?", [$userId]);
     $todaysInvoices = (int)($rowToday['c'] ?? 0);
     $todaysSales = (float)($rowToday['total'] ?? 0);
     $todaysAverage = $todaysInvoices > 0 ? ($todaysSales / $todaysInvoices) : 0;
 
-    $row7 = $db->queryOne("SELECT COUNT(*) as c, COALESCE(SUM(total_amount),0) as total FROM invoices WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND created_by = ?", [$userId]);
+    $row7 = $db->queryOne("SELECT COUNT(*) as c, COALESCE(SUM(total_amount),0) as total FROM invoices WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND created_by = ?" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : ""), [$userId]);
     $last7DaysCount = (int)($row7['c'] ?? 0);
     $last7DaysSales = (float)($row7['total'] ?? 0);
 
     // Customers served: distinct customer_id (NULL = walk-in, count as unique per invoice via id)
     $rowCust = $db->queryOne("SELECT COUNT(DISTINCT COALESCE(customer_id, id)) as c FROM invoices WHERE {$orgFilter} DATE(invoice_date) = CURDATE() AND created_by = ?", [$userId]);
     $customersToday = (int)($rowCust['c'] ?? 0);
-    $rowCust7 = $db->queryOne("SELECT COUNT(DISTINCT COALESCE(customer_id, id)) as c FROM invoices WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND created_by = ?", [$userId]);
+    $rowCust7 = $db->queryOne("SELECT COUNT(DISTINCT COALESCE(customer_id, id)) as c FROM invoices WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND created_by = ?" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : ""), [$userId]);
     $customersLast7 = (int)($rowCust7['c'] ?? 0);
-    $rowCustAll = $db->queryOne("SELECT COUNT(DISTINCT COALESCE(customer_id, id)) as c FROM invoices WHERE created_by = ?", [$userId]);
+    $rowCustAll = $db->queryOne("SELECT COUNT(DISTINCT COALESCE(customer_id, id)) as c FROM invoices WHERE created_by = ?" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : ""), [$userId]);
     $customersAllTime = (int)($rowCustAll['c'] ?? 0);
 
     $targetProgress = $salesTarget > 0 ? min(100, ($todaysSales / $salesTarget) * 100) : 0;
@@ -114,14 +114,14 @@ $allTimeSales = 0;
 $allTimeCount = 0;
 if ($totalInvoicesCount > 0 && $todaysInvoices == 0 && $last7DaysCount == 0) {
     try {
-        $rowAll = $db->queryOne("SELECT COUNT(*) as c, COALESCE(SUM(total_amount),0) as total FROM invoices WHERE created_by = ?", [$userId]);
+        $rowAll = $db->queryOne("SELECT COUNT(*) as c, COALESCE(SUM(total_amount),0) as total FROM invoices WHERE created_by = ?" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : ""), [$userId]);
         $allTimeCount = (int)($rowAll['c'] ?? 0);
         $allTimeSales = (float)($rowAll['total'] ?? 0);
     } catch (Exception $e) {}
 }
 
 try {
-    $myWeeklySales = $db->queryOne("SELECT COALESCE(SUM(total_amount),0) as total, COUNT(*) as count FROM invoices WHERE YEARWEEK(invoice_date) = YEARWEEK(CURDATE()) AND created_by = ?", [$userId]);
+    $myWeeklySales = $db->queryOne("SELECT COALESCE(SUM(total_amount),0) as total, COUNT(*) as count FROM invoices WHERE YEARWEEK(invoice_date) = YEARWEEK(CURDATE()) AND created_by = ?" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : ""), [$userId]);
     $myWeeklySales = $myWeeklySales ?: ['total' => 0, 'count' => 0];
     $myWeeklySales['total'] = (float)$myWeeklySales['total'];
 } catch (Exception $e) { $myWeeklySales = ['total' => 0, 'count' => 0]; }
@@ -133,7 +133,7 @@ try {
 $commissionEarned = $commissionPercent > 0 ? ($myMonthlySales['total'] * $commissionPercent / 100) : 0;
 
 try {
-    $dailyTrend = $db->query("SELECT DATE(invoice_date) as dt, COALESCE(SUM(total_amount),0) as total FROM invoices WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND created_by = ? GROUP BY DATE(invoice_date) ORDER BY dt", [$userId]);
+    $dailyTrend = $db->query("SELECT DATE(invoice_date) as dt, COALESCE(SUM(total_amount),0) as total FROM invoices WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND created_by = ?" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . " GROUP BY DATE(invoice_date) ORDER BY dt", [$userId]);
 } catch (Exception $e) { $dailyTrend = []; }
 for ($i = 6; $i >= 0; $i--) {
     $d = date('Y-m-d', strtotime("-$i days"));
@@ -145,7 +145,7 @@ for ($i = 6; $i >= 0; $i--) {
 }
 
 try {
-    $myRecentSales = $db->query("SELECT i.*, c.name as customer_name, c.phone as customer_phone FROM invoices i LEFT JOIN customers c ON i.customer_id = c.id ORDER BY i.id DESC LIMIT 10");
+    $myRecentSales = $db->query("SELECT i.*, c.name as customer_name, c.phone as customer_phone FROM invoices i LEFT JOIN customers c ON i.customer_id = c.id" . ($orgIdPatch ? " WHERE i.organization_id = " . intval($orgIdPatch) : "") . " ORDER BY i.id DESC LIMIT 10");
 } catch (Exception $e) { $myRecentSales = []; }
 
 // === PRODUCTS (quick lookup, low stock) ===
@@ -155,14 +155,14 @@ try {
                p.min_stock_level, c.name as category_name
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.id
-        WHERE {$orgFilter} p.status = 'active' AND p.stock_quantity > 0
+        WHERE " . ($orgIdPatch ? " p.organization_id = " . intval($orgIdPatch) . " AND " : "") . " p.status = 'active' AND p.stock_quantity > 0
         ORDER BY p.name ASC
         LIMIT 50
     ");
     $lowStockProducts = $db->query("
         SELECT name, stock_quantity, min_stock_level
         FROM products
-        WHERE stock_quantity > 0 AND stock_quantity <= min_stock_level
+        WHERE {$orgFilter} stock_quantity > 0 AND stock_quantity <= min_stock_level
         AND status = 'active'
         ORDER BY stock_quantity ASC
         LIMIT 5
@@ -178,7 +178,7 @@ try {
         FROM invoice_items ii
         INNER JOIN invoices i ON ii.invoice_id = i.id
         INNER JOIN products p ON ii.product_id = p.id
-        WHERE {$orgFilter} DATE(i.invoice_date) = CURDATE() 
+        WHERE " . ($orgIdPatch ? " i.organization_id = " . intval($orgIdPatch) . " AND " : "") . " DATE(i.invoice_date) = CURDATE() 
         AND i.created_by = ?
         AND i.status != 'cancelled'
         GROUP BY p.id, p.name
@@ -204,7 +204,7 @@ try {
             AND MONTH(i.invoice_date) = MONTH(CURDATE())
             AND YEAR(i.invoice_date) = YEAR(CURDATE())
             AND i.status != 'cancelled'
-        WHERE u.role IN ('sales_executive', 'store_manager', 'admin', 'super_admin') AND u.status = 'active'
+        WHERE " . ($orgIdPatch ? "u.organization_id = " . intval($orgIdPatch) . " AND " : "") . "u.role IN ('sales_executive', 'store_manager', 'admin', 'super_admin') AND u.status = 'active'
         GROUP BY u.id, u.full_name, u.username
         ORDER BY total_sales DESC
         LIMIT 5

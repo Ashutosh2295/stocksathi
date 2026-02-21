@@ -21,7 +21,7 @@ $canManage = in_array($userRole, ['super_admin', 'admin', 'hr'], true)
 $employee = null;
 if ($userId) {
     try {
-        $employee = $db->queryOne("SELECT id, first_name, last_name, employee_code FROM employees WHERE user_id = ? LIMIT 1", [$userId]);
+        $employee = $db->queryOne("SELECT id, first_name, last_name, employee_code FROM employees WHERE " . ($orgIdPatch ? "organization_id = " . intval($orgIdPatch) . " AND " : "") . "user_id = ? LIMIT 1", [$userId]);
     } catch (Exception $e) {
         // Missing table or schema issues handled by session_guard missing-table handler
         $employee = null;
@@ -69,8 +69,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $days = (int)$from->diff($to)->days + 1; // inclusive
 
             $db->execute(
-                "INSERT INTO leave_requests (employee_id, leave_type, from_date, to_date, total_days, reason, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')",
-                [$employee['id'], $leaveType, $fromDate, $toDate, $days, $reason]
+                "INSERT INTO leave_requests (employee_id, leave_type, from_date, to_date, total_days, reason, status, organization_id) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)",
+                [$employee['id'], $leaveType, $fromDate, $toDate, $days, $reason, $orgIdPatch]
             );
 
             Session::setFlash('Leave request submitted successfully', 'success');
@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
 
-            $leave = $db->queryOne("SELECT * FROM leave_requests WHERE {$orgFilter} id = ? LIMIT 1", [$leaveId]);
+            $leave = $db->queryOne("SELECT * FROM leave_requests WHERE id = ? LIMIT 1", [$leaveId]);
             if (!$leave) {
                 Session::setFlash('Leave request not found', 'error');
                 header('Location: ' . $_SERVER['PHP_SELF']);
@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit;
                 }
 
-                $db->execute("UPDATE leave_requests SET status = 'cancelled', updated_at = NOW() WHERE {$orgFilter} id = ?", [$leaveId]);
+                $db->execute("UPDATE leave_requests SET status = 'cancelled', updated_at = NOW() WHERE id = ?", [$leaveId]);
                 Session::setFlash('Leave request cancelled', 'success');
                 header('Location: ' . $_SERVER['PHP_SELF']);
                 exit;
@@ -127,12 +127,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($action === 'approve_leave') {
                 $db->execute(
-                    "UPDATE leave_requests SET status = 'approved', approved_by = ?, approval_date = CURDATE(), rejection_reason = NULL, updated_at = NOW() WHERE {$orgFilter} id = ?",
+                    "UPDATE leave_requests SET status = 'approved', approved_by = ?, approval_date = CURDATE(), rejection_reason = NULL, updated_at = NOW() WHERE id = ?",
                     [$userId, $leaveId]
                 );
                 
                 // Fetch leave details to insert into attendance
-                $leaveDetails = $db->queryOne("SELECT employee_id, from_date, to_date FROM leave_requests WHERE {$orgFilter} id = ?", [$leaveId]);
+                $leaveDetails = $db->queryOne("SELECT employee_id, from_date, to_date FROM leave_requests WHERE id = ?", [$leaveId]);
                 
                 if ($leaveDetails) {
                     $currentDate = new DateTime($leaveDetails['from_date']);
@@ -148,13 +148,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         
                         if ($existing) {
                             $db->execute(
-                                "UPDATE attendance SET status = 'on_leave', check_in = NULL, check_out = NULL, total_hours = 0 WHERE {$orgFilter} id = ?",
+                                "UPDATE attendance SET status = 'on_leave', check_in = NULL, check_out = NULL, total_hours = 0 WHERE id = ?",
                                 [$existing['id']]
                             );
                         } else {
                             $db->execute(
-                                "INSERT INTO attendance (employee_id, date, status) VALUES (?, ?, 'on_leave')",
-                                [$leaveDetails['employee_id'], $dateStr]
+                                "INSERT INTO attendance (employee_id, date, status, organization_id) VALUES (?, ?, 'on_leave', ?)",
+                                [$leaveDetails['employee_id'], $dateStr, $orgIdPatch]
                             );
                         }
                         
@@ -171,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $reason = trim((string)($_POST['rejection_reason'] ?? ''));
                 if ($reason === '') $reason = 'Rejected';
                 $db->execute(
-                    "UPDATE leave_requests SET status = 'rejected', approved_by = ?, approval_date = CURDATE(), rejection_reason = ?, updated_at = NOW() WHERE {$orgFilter} id = ?",
+                    "UPDATE leave_requests SET status = 'rejected', approved_by = ?, approval_date = CURDATE(), rejection_reason = ?, updated_at = NOW() WHERE id = ?",
                     [$userId, $reason, $leaveId]
                 );
                 Session::setFlash('Leave request rejected', 'success');
@@ -198,6 +198,7 @@ try {
             "SELECT lr.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name, e.employee_code
              FROM leave_requests lr
              LEFT JOIN employees e ON lr.employee_id = e.id
+             " . ($orgIdPatch ? " WHERE lr.organization_id = " . intval($orgIdPatch) : "") . "
              ORDER BY lr.created_at DESC, lr.id DESC
              LIMIT 200"
         );
@@ -206,7 +207,7 @@ try {
             "SELECT lr.*, CONCAT(e.first_name, ' ', e.last_name) AS employee_name, e.employee_code
              FROM leave_requests lr
              LEFT JOIN employees e ON lr.employee_id = e.id
-             WHERE lr.employee_id = ?
+             WHERE lr.employee_id = ?" . ($orgIdPatch ? " AND lr.organization_id = " . intval($orgIdPatch) : "") . "
              ORDER BY lr.created_at DESC, lr.id DESC
              LIMIT 200",
             [$employee['id']]

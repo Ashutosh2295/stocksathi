@@ -48,13 +48,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 try {
                     if ($action === 'create') {
                         // Generate quotation number
-                        $lastQuot = $db->queryOne("SELECT quotation_number FROM quotations ORDER BY id DESC LIMIT 1");
+                        $lastQuot = $db->queryOne("SELECT quotation_number FROM quotations " . ($orgIdPatch ? "WHERE organization_id = " . intval($orgIdPatch) : "") . " ORDER BY id DESC LIMIT 1");
                         $lastNum = $lastQuot ? (int)substr($lastQuot['quotation_number'], 3) : 0;
                         $quotNumber = 'QT-' . str_pad($lastNum + 1, 4, '0', STR_PAD_LEFT);
                         
                         // Insert quotation
-                        $query = "INSERT INTO quotations (quotation_number, customer_id, quotation_date, valid_until, subtotal, tax_amount, discount_amount, total_amount, status, notes, created_by) 
-                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        $query = "INSERT INTO quotations (quotation_number, customer_id, quotation_date, valid_until, subtotal, tax_amount, discount_amount, total_amount, status, notes, created_by, organization_id) 
+                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                         $quotId = $db->execute($query, [
                             $quotNumber,
                             $data['customer_id'],
@@ -66,7 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $totalAmount,
                             $data['status'] ?? 'pending',
                             $data['notes'] ?? null,
-                            $userId
+                            $userId,
+                            $orgIdPatch
                         ]);
                         
                         $db->commit();
@@ -158,6 +159,7 @@ try {
     $query = "SELECT q.*, c.name as customer_name 
               FROM quotations q 
               LEFT JOIN customers c ON q.customer_id = c.id 
+              " . ($orgIdPatch ? " WHERE q.organization_id = " . intval($orgIdPatch) : "") . "
               ORDER BY q.created_at DESC";
     $quotations = $db->query($query);
 } catch (Exception $e) {

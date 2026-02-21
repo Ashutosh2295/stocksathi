@@ -34,7 +34,7 @@ try {
                c.gst_number as customer_gst
         FROM invoices i
         LEFT JOIN customers c ON i.customer_id = c.id
-        WHERE {$orgFilter} i.id = ?
+        WHERE " . ($orgIdPatch ? " i.organization_id = " . intval($orgIdPatch) . " AND " : "") . " i.id = ?
     ", [$invoiceId]);
     
     if (!$invoice) {
@@ -46,7 +46,7 @@ try {
         SELECT ii.*, p.name as product_name, p.sku
         FROM invoice_items ii
         LEFT JOIN products p ON ii.product_id = p.id
-        WHERE {$orgFilter} ii.invoice_id = ?
+        WHERE ii.invoice_id = ?
     ", [$invoiceId]);
     
     // Get company settings

@@ -17,17 +17,17 @@ $orgWhere = $orgIdPatch ? " WHERE organization_id = " . intval($orgIdPatch) . " 
 // Get dashboard statistics using direct MySQL queries
 try {
     // Total Products Count
-    $totalProducts = $db->queryOne("SELECT COUNT(*) as count FROM products {$orgWhere}\")['count'];
+    $totalProducts = $db->queryOne("SELECT COUNT(*) as count FROM products {$orgWhere}")['count'];
     
     // Stock Value (sum of purchase_price * stock_quantity)
-    $stockValueResult = $db->queryOne("SELECT SUM(purchase_price * stock_quantity) as total FROM products WHERE stock_quantity > 0");
+    $stockValueResult = $db->queryOne("SELECT SUM(purchase_price * stock_quantity) as total FROM products WHERE {$orgFilter} stock_quantity > 0");
     $stockValue = $stockValueResult['total'] ?? 0;
     
     // Low Stock Alerts (stock_quantity <= min_stock_level and stock_quantity > 0)
-    $lowStockCount = $db->queryOne("SELECT COUNT(*) as count FROM products WHERE stock_quantity > 0 AND stock_quantity <= min_stock_level")['count'];
+    $lowStockCount = $db->queryOne("SELECT COUNT(*) as count FROM products WHERE {$orgFilter} stock_quantity > 0 AND stock_quantity <= min_stock_level")['count'];
     
     // Out of Stock Count
-    $outOfStockCount = $db->queryOne("SELECT COUNT(*) as count FROM products WHERE stock_quantity = 0")['count'];
+    $outOfStockCount = $db->queryOne("SELECT COUNT(*) as count FROM products WHERE {$orgFilter} stock_quantity = 0")['count'];
     
     // Get sales data for chart (last 7 months)
     try {
@@ -35,7 +35,7 @@ try {
             DATE_FORMAT(invoice_date, '%Y-%m') as month,
             SUM(total_amount) as total
             FROM invoices 
-            WHERE invoice_date >= DATE_SUB(NOW(), INTERVAL 7 MONTH) AND status != 'cancelled'
+            WHERE invoice_date >= DATE_SUB(NOW(), INTERVAL 7 MONTH) AND status != 'cancelled'" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . "
             GROUP BY DATE_FORMAT(invoice_date, '%Y-%m')
             ORDER BY month ASC";
         $salesData = $db->query($salesQuery);
@@ -61,7 +61,7 @@ try {
     }
     
     // Stock Distribution
-    $inStockCount = $db->queryOne("SELECT COUNT(*) as count FROM products WHERE stock_quantity > min_stock_level")['count'];
+    $inStockCount = $db->queryOne("SELECT COUNT(*) as count FROM products WHERE {$orgFilter} stock_quantity > min_stock_level")['count'];
     $stockDistribution = [
         'in_stock' => $inStockCount,
         'low_stock' => $lowStockCount,
@@ -73,7 +73,7 @@ try {
         al.*,
         u.full_name as user_name
         FROM activity_logs al
-        LEFT JOIN users u ON al.user_id = u.id
+        LEFT JOIN users u ON al.user_id = u.id" . ($orgIdPatch ? " WHERE al.organization_id = " . intval($orgIdPatch) : "") . "
         ORDER BY al.created_at DESC
         LIMIT 10";
     $recentActivities = $db->query($activityQuery);

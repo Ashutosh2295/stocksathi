@@ -45,14 +45,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 try {
                     // Insert stock log (use 'adjustment' as type, store adjustment_type in notes or separate field)
-                    $query = "INSERT INTO stock_logs (product_id, type, quantity, reference_type, reference_id, notes, created_by) 
-                             VALUES (?, 'adjustment', ?, 'stock_adjustment', ?, ?, ?)";
+                    $query = "INSERT INTO stock_logs (product_id, type, quantity, reference_type, reference_id, notes, created_by, organization_id) 
+                             VALUES (?, 'adjustment', ?, 'stock_adjustment', ?, ?, ?, ?)";
                     $logId = $db->execute($query, [
                         $data['product_id'],
-                        $adjustmentType === 'add' ? $quantity : -$quantity, // Store signed quantity
+                        $adjustmentType === 'add' ? $quantity : -$quantity,
                         null,
                         ($data['reason'] ?? '') . ' [Type: ' . $adjustmentType . ']',
-                        $userId
+                        $userId,
+                        $orgIdPatch
                     ]);
                     
                     // Update product stock based on adjustment type
@@ -92,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $messageType = 'error';
             } else {
                 // Get stock log details
-                $log = $db->queryOne("SELECT * FROM stock_logs WHERE {$orgFilter} id = ? AND type = 'adjustment'", [$id]);
+                $log = $db->queryOne("SELECT * FROM stock_logs WHERE " . ($orgIdPatch ? "organization_id = " . intval($orgIdPatch) . " AND " : "") . "id = ? AND type = 'adjustment'", [$id]);
                 
                 if (!$log) {
                     Session::setFlash('Adjustment entry not found', 'error');
@@ -117,8 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             );
                         }
                         
-                        // Delete the log
-                        $db->execute("DELETE FROM stock_logs WHERE {$orgFilter} id = ?", [$id]);
+                        $db->execute("DELETE FROM stock_logs WHERE " . ($orgIdPatch ? "organization_id = " . intval($orgIdPatch) . " AND " : "") . "id = ?", [$id]);
                         
                         $db->commit();
                         Session::setFlash('Adjustment deleted successfully', 'success');
@@ -154,7 +154,7 @@ try {
           FROM stock_logs sl
           LEFT JOIN products p ON sl.product_id = p.id
           LEFT JOIN users u ON sl.created_by = u.id
-          WHERE sl.type = 'adjustment'
+          WHERE sl.type = 'adjustment'" . ($orgIdPatch ? " AND sl.organization_id = " . intval($orgIdPatch) : "") . "
           ORDER BY sl.created_at DESC";
     $adjustments = $db->query($query);
 } catch (Exception $e) {

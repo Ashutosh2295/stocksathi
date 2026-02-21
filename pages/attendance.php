@@ -29,14 +29,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         if ($action === 'checkin') {
             // Get employee_id from user_id
-            $employee = $db->queryOne("SELECT id FROM employees WHERE user_id = ?", [$userId]);
+            $employee = $db->queryOne("SELECT id FROM employees WHERE " . ($orgIdPatch ? "organization_id = " . intval($orgIdPatch) . " AND " : "") . "user_id = ?", [$userId]);
             if (!$employee) {
                 Session::setFlash('Employee record not found. Please contact administrator.', 'error');
             } else {
                 $employeeId = $employee['id'];
                 $today = date('Y-m-d');
                 
-                // Check if already checked in today
                 $existing = $db->queryOne(
                     "SELECT * FROM attendance WHERE employee_id = ? AND date = ?",
                     [$employeeId, $today]
@@ -46,15 +45,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     Session::setFlash('You have already checked in today', 'error');
                 } else {
                     $db->execute(
-                        "INSERT INTO attendance (employee_id, date, check_in, status) VALUES (?, ?, TIME(NOW()), 'present')",
-                        [$employeeId, $today]
+                        "INSERT INTO attendance (employee_id, date, check_in, status, organization_id) VALUES (?, ?, TIME(NOW()), 'present', ?)",
+                        [$employeeId, $today, $orgIdPatch]
                     );
                     Session::setFlash('Checked in successfully', 'success');
                 }
             }
         } elseif ($action === 'checkout') {
-            // Get employee_id from user_id
-            $employee = $db->queryOne("SELECT id FROM employees WHERE user_id = ?", [$userId]);
+            $employee = $db->queryOne("SELECT id FROM employees WHERE " . ($orgIdPatch ? "organization_id = " . intval($orgIdPatch) . " AND " : "") . "user_id = ?", [$userId]);
             if (!$employee) {
                 Session::setFlash('Employee record not found. Please contact administrator.', 'error');
             } else {
@@ -79,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $hours = (($diff->days ?? 0) * 24) + $diff->h + ($diff->i / 60) + ($diff->s / 3600);
                     
                     $db->execute(
-                        "UPDATE attendance SET check_out = ?, total_hours = ? WHERE {$orgFilter} id = ?",
+                        "UPDATE attendance SET check_out = ?, total_hours = ? WHERE id = ?",
                         [$checkOutTime, $hours, $attendance['id']]
                     );
                     Session::setFlash('Checked out successfully', 'success');
@@ -112,7 +110,7 @@ $query = "SELECT a.*,
           TIMESTAMPDIFF(HOUR, CONCAT(a.date, ' ', a.check_in), CONCAT(a.date, ' ', COALESCE(a.check_out, TIME(NOW())))) as hours_calculated
           FROM attendance a
           LEFT JOIN employees e ON a.employee_id = e.id
-          " . ($orgIdPatch ? " WHERE a.organization_id = " . intval($orgIdPatch) . " AND a.date = ?" : " WHERE a.date = ?") . "
+          WHERE a.date = ?" . ($orgIdPatch ? " AND a.organization_id = " . intval($orgIdPatch) : "") . "
           ORDER BY a.check_in DESC";
 $todayAttendance = $db->query($query, [$today]);
 
@@ -124,7 +122,7 @@ $employee = null; // Defined here for scope
 
 if ($currentUserId) {
     // First get employee_id from user_id
-    $employee = $db->queryOne("SELECT id FROM employees WHERE user_id = ?", [$currentUserId]);
+    $employee = $db->queryOne("SELECT id FROM employees WHERE " . ($orgIdPatch ? "organization_id = " . intval($orgIdPatch) . " AND " : "") . "user_id = ?", [$currentUserId]);
     if ($employee) {
         $userAttendance = $db->queryOne(
             "SELECT * FROM attendance WHERE employee_id = ? AND date = ?",

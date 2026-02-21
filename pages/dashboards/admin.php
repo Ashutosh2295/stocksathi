@@ -64,7 +64,7 @@ try {
     $totalProducts = $db->queryOne("SELECT COUNT(*) as count FROM products WHERE {$orgFilter} status = 'active'")['count'];
     $lowStockCount = $db->queryOne("SELECT COUNT(*) as count FROM products WHERE {$orgFilter} stock_quantity > 0 AND stock_quantity <= min_stock_level")['count'];
     $outOfStockCount = $db->queryOne("SELECT COUNT(*) as count FROM products WHERE {$orgFilter} stock_quantity = 0 AND status = 'active'")['count'];
-    $stockValue = $db->queryOne("SELECT COALESCE(SUM(purchase_price * stock_quantity), 0) as total FROM products {$orgWhere}\")['total'];
+    $stockValue = $db->queryOne("SELECT COALESCE(SUM(purchase_price * stock_quantity), 0) as total FROM products {$orgWhere}")['total'];
     
     // === CUSTOMER STATS ===
     $totalCustomers = $db->queryOne("SELECT COUNT(*) as count FROM customers WHERE {$orgFilter} status = 'active'")['count'];
@@ -85,7 +85,7 @@ try {
         FROM invoice_items ii
         INNER JOIN products p ON ii.product_id = p.id
         INNER JOIN invoices i ON ii.invoice_id = i.id
-        WHERE {$orgFilter} i.status != 'cancelled' AND (i.payment_status = 'paid' OR i.payment_status = 'partial')
+        WHERE " . ($orgIdPatch ? " i.organization_id = " . intval($orgIdPatch) . " AND " : "") . " i.status != 'cancelled' AND (i.payment_status = 'paid' OR i.payment_status = 'partial')
         GROUP BY p.id, p.name, p.sku
         ORDER BY total_sold DESC
         LIMIT 5
@@ -99,7 +99,7 @@ try {
             AND MONTH(i.invoice_date) = MONTH(CURDATE()) 
             AND YEAR(i.invoice_date) = YEAR(CURDATE())
             AND i.status != 'cancelled'
-        WHERE {$orgFilter} u.role IN ('sales_executive', 'store_manager') AND u.status = 'active'
+        WHERE " . ($orgIdPatch ? " u.organization_id = " . intval($orgIdPatch) . " AND " : "") . " u.role IN ('sales_executive', 'store_manager') AND u.status = 'active'
         GROUP BY u.id, u.full_name, u.username
         ORDER BY total_sales DESC
         LIMIT 5
@@ -111,7 +111,7 @@ try {
         FROM invoices i
         LEFT JOIN customers c ON i.customer_id = c.id
         LEFT JOIN users u ON i.created_by = u.id
-        WHERE {$orgFilter} i.status != 'cancelled'
+        WHERE " . ($orgIdPatch ? " i.organization_id = " . intval($orgIdPatch) . " AND " : "") . " i.status != 'cancelled'
         ORDER BY i.created_at DESC
         LIMIT 10
     ");
@@ -122,6 +122,7 @@ try {
             SELECT al.*, u.full_name as user_name
             FROM activity_logs al
             LEFT JOIN users u ON al.user_id = u.id
+            WHERE 1=1" . ($orgIdPatch ? " AND al.organization_id = " . intval($orgIdPatch) : "") . "
             ORDER BY al.created_at DESC
             LIMIT 10
         ");
@@ -148,7 +149,7 @@ try {
         SELECT DATE(invoice_date) as date, COALESCE(SUM(total_amount), 0) as total
         FROM invoices
         WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-        AND status != 'cancelled'
+        AND status != 'cancelled'" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . "
         GROUP BY DATE(invoice_date)
         ORDER BY date ASC
     ");
@@ -175,7 +176,7 @@ try {
         $categoryBreakdown = $db->query("
             SELECT c.name, COUNT(p.id) as product_count, COALESCE(SUM(p.stock_quantity * p.selling_price), 0) as value
             FROM categories c
-            LEFT JOIN products p ON c.id = p.category_id AND p.status = 'active'
+            LEFT JOIN products p ON c.id = p.category_id AND p.status = 'active'" . ($orgIdPatch ? " WHERE c.organization_id = " . intval($orgIdPatch) : "") . "
             GROUP BY c.id, c.name
             HAVING product_count > 0
             ORDER BY value DESC

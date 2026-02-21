@@ -54,7 +54,7 @@ try {
         FROM invoice_items ii
         INNER JOIN products p ON ii.product_id = p.id
         INNER JOIN invoices i ON ii.invoice_id = i.id
-        WHERE {$orgFilter} i.status != 'cancelled' AND (i.payment_status = 'paid' OR i.payment_status = 'partial') AND i.organization_id = ?
+        WHERE i.organization_id = ? AND i.status != 'cancelled' AND (i.payment_status = 'paid' OR i.payment_status = 'partial')
         GROUP BY p.id, p.name
         ORDER BY total_sold DESC
         LIMIT 5

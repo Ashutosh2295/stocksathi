@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $data = Validator::sanitize($_POST);
                 
-                $query = "INSERT INTO customers (name, email, phone, address, city, state, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                $query = "INSERT INTO customers (name, email, phone, address, city, state, status, organization_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
                 $id = $db->execute($query, [
                     $data['name'],
                     $data['email'] ?? null,
@@ -43,7 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $data['address'] ?? null,
                     $data['city'] ?? null,
                     $data['state'] ?? null,
-                    $data['status'] ?? 'active'
+                    $data['status'] ?? 'active',
+                    $orgIdPatch
                 ]);
                 
                 Session::setFlash('Customer created successfully', 'success');

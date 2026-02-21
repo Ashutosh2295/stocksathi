@@ -264,7 +264,7 @@ if ($invoiceId) {
         "SELECT i.*, c.name as customer_name 
          FROM invoices i
          LEFT JOIN customers c ON i.customer_id = c.id
-         WHERE {$orgFilter} i.id = ?",
+         WHERE " . ($orgIdPatch ? " i.organization_id = " . intval($orgIdPatch) . " AND " : "") . " i.id = ?",
         [$invoiceId]
     );
     
@@ -279,7 +279,7 @@ if ($invoiceId) {
         "SELECT ii.*, p.name as product_name, p.sku, p.stock_quantity 
          FROM invoice_items ii
          LEFT JOIN products p ON ii.product_id = p.id
-         WHERE {$orgFilter} ii.invoice_id = ?",
+         WHERE ii.invoice_id = ?",
         [$invoiceId]
     );
 }

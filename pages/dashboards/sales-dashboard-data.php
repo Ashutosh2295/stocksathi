@@ -41,7 +41,7 @@ $out = [
 ];
 
 try {
-    $totalInvoices = (int)$db->queryOne("SELECT COUNT(*) as c FROM invoices {$orgWhere}\")['c'];
+    $totalInvoices = (int)$db->queryOne("SELECT COUNT(*) as c FROM invoices {$orgWhere}")['c'];
     $out['totalInvoices'] = $totalInvoices;
 
     $overallToday = $db->queryOne("

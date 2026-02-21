@@ -49,8 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Generate expense number
                 $expenseNumber = 'EXP-' . date('Y') . '-' . str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
                 
-                $query = "INSERT INTO expenses (expense_number, category, amount, expense_date, payment_method, vendor, description, receipt, status, created_by) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $query = "INSERT INTO expenses (expense_number, category, amount, expense_date, payment_method, vendor, description, receipt, status, created_by, organization_id) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 $id = $db->execute($query, [
                     $expenseNumber,
                     $data['category'] ?? 'General',
@@ -61,7 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $data['description'] ?? null,
                     $data['receipt'] ?? null,
                     $data['status'] ?? 'pending',
-                    $userId
+                    $userId,
+                    $orgIdPatch
                 ]);
                 
                 Session::setFlash('Expense created successfully', 'success');
@@ -160,6 +161,7 @@ $query = "SELECT e.*,
           FROM expenses e
           LEFT JOIN users u ON e.created_by = u.id
           LEFT JOIN users u2 ON e.approved_by = u2.id
+          " . ($orgIdPatch ? " WHERE e.organization_id = " . intval($orgIdPatch) : "") . "
           ORDER BY e.expense_date DESC, e.id DESC";
 $expenses = $db->query($query);
 ?>

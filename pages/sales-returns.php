@@ -56,8 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $invoice = $db->queryOne("SELECT customer_id, invoice_number FROM invoices WHERE {$orgFilter} id = ?", [$data['invoice_id']]);
                         
                         // Create sales return
-                        $query = "INSERT INTO sales_returns (return_number, invoice_id, customer_id, return_date, total_amount, refund_amount, refund_status, reason, created_by) 
-                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        $query = "INSERT INTO sales_returns (return_number, invoice_id, customer_id, return_date, total_amount, refund_amount, refund_status, reason, created_by, organization_id) 
+                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                         $returnId = $db->execute($query, [
                             $returnNumber,
                             $data['invoice_id'],
@@ -67,7 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             (float)($data['refund_amount'] ?? 0),
                             $data['refund_status'] ?? 'pending',
                             $data['reason'] ?? null,
-                            $userId
+                            $userId,
+                            $orgIdPatch
                         ]);
                         
                         // Restore stock for each returned item
@@ -79,9 +80,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                             // Log stock in
                             $db->execute(
-                                "INSERT INTO stock_logs (product_id, type, quantity, reference_type, reference_id, notes, created_by) 
-                                 VALUES (?, 'in', ?, 'sales_return', ?, ?, ?)",
-                                [$item['product_id'], $item['quantity'], $returnId, 'Sales Return: ' . $returnNumber, $userId]
+                                "INSERT INTO stock_logs (product_id, type, quantity, reference_type, reference_id, notes, created_by, organization_id) 
+                                 VALUES (?, 'in', ?, 'sales_return', ?, ?, ?, ?)",
+                                [$item['product_id'], $item['quantity'], $returnId, 'Sales Return: ' . $returnNumber, $userId, $orgIdPatch]
                             );
                         }
                         
@@ -127,6 +128,7 @@ try {
               LEFT JOIN invoices i ON sr.invoice_id = i.id
               LEFT JOIN customers c ON sr.customer_id = c.id
               LEFT JOIN users u ON sr.created_by = u.id
+              " . ($orgIdPatch ? " WHERE sr.organization_id = " . intval($orgIdPatch) : "") . "
               ORDER BY sr.created_at DESC";
     $returns = $db->query($query);
 } catch (Exception $e) {
@@ -136,7 +138,7 @@ try {
 
 // Load invoices for dropdown
 try {
-    $invoices = $db->query("SELECT i.id, i.invoice_number, c.name as customer_name FROM invoices i LEFT JOIN customers c ON i.customer_id = c.id ORDER BY i.id DESC LIMIT 100");
+    $invoices = $db->query("SELECT i.id, i.invoice_number, c.name as customer_name FROM invoices i LEFT JOIN customers c ON i.customer_id = c.id " . ($orgIdPatch ? " WHERE i.organization_id = " . intval($orgIdPatch) : "") . " ORDER BY i.id DESC LIMIT 100");
 } catch (Exception $e) {
     $invoices = [];
 }

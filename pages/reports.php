@@ -42,11 +42,10 @@ if (isset($_GET['export'])) {
         fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
         
         if ($reportType === 'sales') {
-            // Sales Report
             $query = "SELECT i.invoice_number, c.name as customer_name, i.invoice_date, i.total_amount, i.payment_status 
                      FROM invoices i
                      LEFT JOIN customers c ON i.customer_id = c.id
-                     WHERE i.invoice_date BETWEEN ? AND ? AND i.status != 'cancelled'
+                     WHERE i.invoice_date BETWEEN ? AND ? AND i.status != 'cancelled'" . ($orgIdPatch ? " AND i.organization_id = " . intval($orgIdPatch) : "") . "
                      ORDER BY i.invoice_date DESC";
             $data = $db->query($query, [$startDate, $endDate]);
             
@@ -80,10 +79,9 @@ if (isset($_GET['export'])) {
                 ]);
             }
         } elseif ($reportType === 'expense') {
-            // Expense Report (expenses use category varchar, description)
             $query = "SELECT e.expense_number, e.category, e.description, e.amount, e.expense_date, e.vendor, e.status
                      FROM expenses e
-                     WHERE e.expense_date BETWEEN ? AND ?
+                     WHERE e.expense_date BETWEEN ? AND ?" . ($orgIdPatch ? " AND e.organization_id = " . intval($orgIdPatch) : "") . "
                      ORDER BY e.expense_date DESC";
             $data = $db->query($query, [$startDate, $endDate]);
             
@@ -102,18 +100,18 @@ if (isset($_GET['export'])) {
         } elseif ($reportType === 'profit') {
             // Profit & Loss Report
             $revenueQuery = "SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices 
-                           WHERE invoice_date BETWEEN ? AND ? AND status != 'cancelled'";
+                           WHERE invoice_date BETWEEN ? AND ? AND status != 'cancelled'" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "");
             $revenue = $db->queryOne($revenueQuery, [$startDate, $endDate]);
             
             $costQuery = "SELECT COALESCE(SUM(ii.quantity * p.purchase_price), 0) as total 
                          FROM invoice_items ii
                          INNER JOIN products p ON ii.product_id = p.id
                          INNER JOIN invoices i ON ii.invoice_id = i.id
-                         WHERE i.invoice_date BETWEEN ? AND ? AND i.status != 'cancelled'";
+                         WHERE i.invoice_date BETWEEN ? AND ? AND i.status != 'cancelled'" . ($orgIdPatch ? " AND i.organization_id = " . intval($orgIdPatch) : "");
             $cost = $db->queryOne($costQuery, [$startDate, $endDate]);
             
             $expenseQuery = "SELECT COALESCE(SUM(amount), 0) as total FROM expenses 
-                           WHERE expense_date BETWEEN ? AND ? AND status = 'approved'";
+                           WHERE expense_date BETWEEN ? AND ? AND status = 'approved'" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "");
             $expense = $db->queryOne($expenseQuery, [$startDate, $endDate]);
             
             $totalRevenue = (float)($revenue['total'] ?? 0);
@@ -134,7 +132,7 @@ if (isset($_GET['export'])) {
             $query = "SELECT c.name, c.email, c.phone, c.city, COUNT(DISTINCT i.id) as total_invoices, SUM(i.total_amount) as total_spent
                      FROM customers c
                      LEFT JOIN invoices i ON c.id = i.customer_id AND i.invoice_date BETWEEN ? AND ?
-                     WHERE {$orgFilter} c.status = 'active'
+                     WHERE " . ($orgIdPatch ? " c.organization_id = " . intval($orgIdPatch) . " AND " : "") . " c.status = 'active'
                      GROUP BY c.id
                      ORDER BY total_spent DESC";
             $data = $db->query($query, [$startDate, $endDate]);
@@ -175,24 +173,21 @@ $isPrint = isset($_GET['print']) && $_GET['print'] == '1';
 
 // Calculate summary statistics
 try {
-    // Total Revenue (from invoices)
     $revenueQuery = "SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices 
-                     WHERE invoice_date BETWEEN ? AND ? AND status != 'cancelled'";
+                     WHERE invoice_date BETWEEN ? AND ? AND status != 'cancelled'" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "");
     $revenue = $db->queryOne($revenueQuery, [$startDate, $endDate]);
     $totalRevenue = (float)($revenue['total'] ?? 0);
     
-    // Total Cost (from purchase prices in invoice items)
     $costQuery = "SELECT COALESCE(SUM(ii.quantity * p.purchase_price), 0) as total 
                   FROM invoice_items ii
                   INNER JOIN products p ON ii.product_id = p.id
                   INNER JOIN invoices i ON ii.invoice_id = i.id
-                  WHERE i.invoice_date BETWEEN ? AND ? AND i.status != 'cancelled'";
+                  WHERE i.invoice_date BETWEEN ? AND ? AND i.status != 'cancelled'" . ($orgIdPatch ? " AND i.organization_id = " . intval($orgIdPatch) : "");
     $cost = $db->queryOne($costQuery, [$startDate, $endDate]);
     $totalCost = (float)($cost['total'] ?? 0);
     
-    // Total Expenses
     $expenseQuery = "SELECT COALESCE(SUM(amount), 0) as total FROM expenses 
-                     WHERE expense_date BETWEEN ? AND ? AND status = 'approved'";
+                     WHERE expense_date BETWEEN ? AND ? AND status = 'approved'" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "");
     $expense = $db->queryOne($expenseQuery, [$startDate, $endDate]);
     $totalExpenses = (float)($expense['total'] ?? 0);
     
@@ -215,16 +210,14 @@ try {
                       COUNT(DISTINCT i.customer_id) as active_this_month
                       FROM customers c
                       LEFT JOIN invoices i ON c.id = i.customer_id AND DATE(i.invoice_date) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-                      WHERE {$orgFilter} c.status = 'active'";
+                      WHERE " . ($orgIdPatch ? " c.organization_id = " . intval($orgIdPatch) . " AND " : "") . " c.status = 'active'";
     $customerStats = $db->queryOne($customerQuery);
     
-    // Average Order Value
     $avgOrderQuery = "SELECT COALESCE(AVG(total_amount), 0) as avg_order FROM invoices 
-                      WHERE invoice_date BETWEEN ? AND ? AND status != 'cancelled'";
+                      WHERE invoice_date BETWEEN ? AND ? AND status != 'cancelled'" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "");
     $avgOrder = $db->queryOne($avgOrderQuery, [$startDate, $endDate]);
     $avgOrderValue = (float)($avgOrder['avg_order'] ?? 0);
     
-    // Top Selling Products (This Month)
     $topProductsQuery = "SELECT 
                          p.name as product_name,
                          c.name as category_name,
@@ -236,19 +229,18 @@ try {
                          LEFT JOIN categories c ON p.category_id = c.id
                          INNER JOIN invoices i ON ii.invoice_id = i.id
                          WHERE i.invoice_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) 
-                         AND i.status != 'cancelled'
+                         AND i.status != 'cancelled'" . ($orgIdPatch ? " AND i.organization_id = " . intval($orgIdPatch) : "") . "
                          GROUP BY p.id, p.name, c.name
                          ORDER BY units_sold DESC
                          LIMIT 10";
     $topProducts = $db->query($topProductsQuery);
     
-    // Sales Trend (Last 30 Days - Weekly)
     $salesTrendQuery = "SELECT 
                        DATE_FORMAT(invoice_date, '%Y-%u') as week,
                        SUM(total_amount) as weekly_sales
                        FROM invoices
                        WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-                       AND status != 'cancelled'
+                       AND status != 'cancelled'" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . "
                        GROUP BY DATE_FORMAT(invoice_date, '%Y-%u')
                        ORDER BY week ASC
                        LIMIT 4";

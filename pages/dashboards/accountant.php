@@ -31,7 +31,7 @@ try {
         SELECT COALESCE(SUM(total_amount), 0) as total 
         FROM invoices 
         WHERE DATE_FORMAT(invoice_date, '%Y-%m') = ? 
-        AND payment_status = 'paid'
+        AND payment_status = 'paid'" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . "
     ", [$currentMonth])['total'];
     
     // Total Expenses This Month
@@ -39,7 +39,7 @@ try {
         SELECT COALESCE(SUM(amount), 0) as total 
         FROM expenses 
         WHERE DATE_FORMAT(expense_date, '%Y-%m') = ? 
-        AND status = 'approved'
+        AND status = 'approved'" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . "
     ", [$currentMonth])['total'];
     
     // Net Profit This Month
@@ -50,14 +50,14 @@ try {
         SELECT COALESCE(SUM(tax_amount), 0) as total 
         FROM invoices 
         WHERE DATE_FORMAT(invoice_date, '%Y-%m') = ?
-        AND status != 'cancelled'
+        AND status != 'cancelled'" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . "
     ", [$currentMonth])['total'];
     
     // Outstanding Receivables
     $outstandingReceivables = $db->queryOne("
         SELECT COALESCE(SUM(balance_amount), 0) as total 
         FROM invoices 
-        WHERE payment_status IN ('unpaid', 'partial', 'overdue')
+        WHERE payment_status IN ('unpaid', 'partial', 'overdue')" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . "
     ")['total'];
     
     // Overdue Invoices Count
@@ -65,7 +65,7 @@ try {
         SELECT COUNT(*) as count 
         FROM invoices 
         WHERE due_date < CURDATE() 
-        AND payment_status IN ('unpaid', 'partial')
+        AND payment_status IN ('unpaid', 'partial')" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . "
     ")['count'];
     
     // Pending Expenses (awaiting approval)
@@ -81,7 +81,7 @@ try {
                COALESCE(SUM(total_amount), 0) as revenue
         FROM invoices 
         WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-        AND payment_status = 'paid'
+        AND payment_status = 'paid'" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . "
         GROUP BY DATE_FORMAT(invoice_date, '%Y-%m')
         ORDER BY month ASC
     ";
@@ -93,7 +93,7 @@ try {
                COALESCE(SUM(amount), 0) as expenses
         FROM expenses 
         WHERE expense_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-        AND status = 'approved'
+        AND status = 'approved'" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . "
         GROUP BY DATE_FORMAT(expense_date, '%Y-%m')
         ORDER BY month ASC
     ";
@@ -125,7 +125,7 @@ try {
         SELECT category, COALESCE(SUM(amount), 0) as total
         FROM expenses 
         WHERE DATE_FORMAT(expense_date, '%Y-%m') = ?
-        AND status = 'approved'
+        AND status = 'approved'" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . "
         GROUP BY category
         ORDER BY total DESC
         LIMIT 5
@@ -142,6 +142,7 @@ try {
             payment_status as status
         FROM invoices i
         LEFT JOIN customers c ON i.customer_id = c.id
+        WHERE " . ($orgIdPatch ? "i.organization_id = " . intval($orgIdPatch) : "1=1") . "
         ORDER BY invoice_date DESC
         LIMIT 5
     ");
@@ -155,6 +156,7 @@ try {
             expense_date as date,
             status
         FROM expenses
+        WHERE " . ($orgIdPatch ? "organization_id = " . intval($orgIdPatch) : "1=1") . "
         ORDER BY expense_date DESC
         LIMIT 5
     ");
@@ -163,7 +165,7 @@ try {
     $customerBalances = $db->query("
         SELECT name, outstanding_balance 
         FROM customers 
-        WHERE outstanding_balance > 0 
+        WHERE {$orgFilter} outstanding_balance > 0 
         ORDER BY outstanding_balance DESC 
         LIMIT 5
     ");
@@ -172,7 +174,7 @@ try {
     $supplierBalances = $db->query("
         SELECT name, outstanding_balance 
         FROM suppliers 
-        WHERE outstanding_balance > 0 
+        WHERE {$orgFilter} outstanding_balance > 0 
         ORDER BY outstanding_balance DESC 
         LIMIT 5
     ");

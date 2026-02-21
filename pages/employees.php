@@ -19,6 +19,7 @@ $query = "SELECT e.*,
           d.name as department_name
           FROM employees e
           LEFT JOIN departments d ON e.department_id = d.id
+          " . ($orgIdPatch ? " WHERE e.organization_id = " . intval($orgIdPatch) : "") . "
           ORDER BY e.id DESC";
 $employees = $db->query($query);
 ?>

@@ -12,7 +12,7 @@ $userId = Session::getUserId();
 
 $notifs = [];
 try {
-    $notifs = $db->query("SELECT * FROM notifications WHERE {$orgFilter} (user_id = ? OR user_id IS NULL) ORDER BY created_at DESC LIMIT 100", [$userId]);
+    $notifs = $db->query("SELECT * FROM notifications WHERE (user_id = ? OR user_id IS NULL)" . ($orgIdPatch ? " AND (organization_id = " . intval($orgIdPatch) . " OR organization_id IS NULL)" : "") . " ORDER BY created_at DESC LIMIT 100", [$userId]);
 } catch (Exception $e) {}
 
 ?>

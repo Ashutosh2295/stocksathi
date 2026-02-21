@@ -1,15 +1,14 @@
 <?php
-/**
- * Clear PHP OpCache
- * Run this if you're seeing old code errors
- */
 if (function_exists('opcache_reset')) {
     opcache_reset();
-    echo "✅ OpCache cleared successfully!<br>";
+    echo "OPcache cleared successfully!<br>";
 } else {
-    echo "⚠️ OpCache not enabled<br>";
+    echo "OPcache not enabled.<br>";
 }
 
-echo "Please restart Apache in XAMPP Control Panel to ensure all changes are loaded.<br>";
-echo "<a href='pages/warehouses.php'>Go to Warehouses Page</a>";
-?>
+if (function_exists('opcache_get_status')) {
+    $status = opcache_get_status();
+    echo "Cached scripts: " . ($status['opcache_statistics']['num_cached_scripts'] ?? 'N/A') . "<br>";
+}
+
+echo "<br>Done. <a href='/stocksathi/pages/invoice-form.php'>Go to Invoice Form</a>";

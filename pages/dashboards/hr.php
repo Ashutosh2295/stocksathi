@@ -100,19 +100,22 @@ $kpi = [
 ];
 
 try {
-    $kpi['employees'] = (int)($db->queryOne("SELECT COUNT(*) AS c FROM employees {$orgWhere}\")['c'] ?? 0);
+    $kpi['employees'] = (int)($db->queryOne("SELECT COUNT(*) AS c FROM employees {$orgWhere}")['c'] ?? 0);
 } catch (Exception $e) {}
 
 try {
-    $kpi['present_today'] = (int)($db->queryOne("SELECT COUNT(*) AS c FROM attendance WHERE date = ? AND status = 'present'", [$today])['c'] ?? 0);
+    $presentResult = $db->queryOne("SELECT COUNT(*) AS c FROM attendance WHERE " . ($orgIdPatch ? "organization_id = " . intval($orgIdPatch) . " AND " : "") . "date = ? AND status = ?", [$today, 'present']);
+    $kpi['present_today'] = (int)($presentResult['c'] ?? 0);
 } catch (Exception $e) {}
 
 try {
-    $kpi['pending_leaves'] = (int)($db->queryOne("SELECT COUNT(*) AS c FROM leave_requests WHERE {$orgFilter} status = 'pending'")['c'] ?? 0);
+    $pendingResult = $db->queryOne("SELECT COUNT(*) AS c FROM leave_requests WHERE " . ($orgIdPatch ? "organization_id = " . intval($orgIdPatch) . " AND " : "") . "status = ?", ['pending']);
+    $kpi['pending_leaves'] = (int)($pendingResult['c'] ?? 0);
 } catch (Exception $e) {}
 
 try {
-    $kpi['on_leave_today'] = (int)($db->queryOne("SELECT COUNT(*) AS c FROM leave_requests WHERE {$orgFilter} status = 'approved' AND ? BETWEEN from_date AND to_date", [$today])['c'] ?? 0);
+    $onLeaveResult = $db->queryOne("SELECT COUNT(*) AS c FROM leave_requests WHERE " . ($orgIdPatch ? "organization_id = " . intval($orgIdPatch) . " AND " : "") . "status = ? AND ? BETWEEN from_date AND to_date", ['approved', $today]);
+    $kpi['on_leave_today'] = (int)($onLeaveResult['c'] ?? 0);
 } catch (Exception $e) {}
 
 // Recent leave requests
@@ -122,6 +125,7 @@ try {
         "SELECT lr.*, CONCAT(e.first_name,' ',e.last_name) AS employee_name
          FROM leave_requests lr
          LEFT JOIN employees e ON e.id = lr.employee_id
+         " . ($orgIdPatch ? " WHERE lr.organization_id = " . intval($orgIdPatch) : "") . "
          ORDER BY lr.created_at DESC
          LIMIT 8"
     );

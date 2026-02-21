@@ -32,7 +32,7 @@ try {
         FROM invoice_items ii
         INNER JOIN products p ON ii.product_id = p.id
         INNER JOIN invoices i ON ii.invoice_id = i.id
-        WHERE {$orgFilter} i.status != 'cancelled'
+        WHERE " . ($orgIdPatch ? " i.organization_id = " . intval($orgIdPatch) . " AND " : "") . " i.status != 'cancelled'
         GROUP BY p.id, p.name
         ORDER BY qty DESC
         LIMIT 5
@@ -41,7 +41,7 @@ try {
         SELECT i.id, i.invoice_number, c.name as customer_name, i.invoice_date, i.total_amount, i.payment_status
         FROM invoices i
         LEFT JOIN customers c ON i.customer_id = c.id
-        WHERE {$orgFilter} i.status != 'cancelled'
+        WHERE " . ($orgIdPatch ? " i.organization_id = " . intval($orgIdPatch) . " AND " : "") . " i.status != 'cancelled'
         ORDER BY i.created_at DESC
         LIMIT 15
     ");

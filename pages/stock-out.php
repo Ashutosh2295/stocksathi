@@ -54,8 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     try {
                         // Insert stock log
-                        $query = "INSERT INTO stock_logs (product_id, type, quantity, reference_type, reference_id, warehouse_id, store_id, notes, created_by) 
-                                 VALUES (?, 'out', ?, 'stock_out', ?, ?, ?, ?, ?)";
+                        $query = "INSERT INTO stock_logs (product_id, type, quantity, reference_type, reference_id, warehouse_id, store_id, notes, created_by, organization_id) 
+                                 VALUES (?, 'out', ?, 'stock_out', ?, ?, ?, ?, ?, ?)";
                         $logId = $db->execute($query, [
                             $data['product_id'],
                             (int)$data['quantity'],
@@ -63,7 +63,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $data['warehouse_id'] ?? null,
                             $data['store_id'] ?? null,
                             $data['notes'] ?? null,
-                            $userId
+                            $userId,
+                            $orgIdPatch
                         ]);
                         
                         // Update product stock
@@ -92,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $messageType = 'error';
             } else {
                 // Get stock log details
-                $log = $db->queryOne("SELECT * FROM stock_logs WHERE {$orgFilter} id = ? AND type = 'out'", [$id]);
+                $log = $db->queryOne("SELECT * FROM stock_logs WHERE " . ($orgIdPatch ? "organization_id = " . intval($orgIdPatch) . " AND " : "") . "id = ? AND type = 'out'", [$id]);
                 
                 if (!$log) {
                     Session::setFlash('Stock entry not found', 'error');
@@ -107,8 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             [$log['quantity'], $log['product_id']]
                         );
                         
-                        // Delete the log
-                        $db->execute("DELETE FROM stock_logs WHERE {$orgFilter} id = ?", [$id]);
+                        $db->execute("DELETE FROM stock_logs WHERE " . ($orgIdPatch ? "organization_id = " . intval($orgIdPatch) . " AND " : "") . "id = ?", [$id]);
                         
                         $db->commit();
                         Session::setFlash('Stock entry deleted successfully', 'success');
@@ -148,7 +148,7 @@ try {
           LEFT JOIN warehouses w ON sl.warehouse_id = w.id
           LEFT JOIN stores s ON sl.store_id = s.id
           LEFT JOIN users u ON sl.created_by = u.id
-          WHERE sl.type = 'out'
+          WHERE sl.type = 'out'" . ($orgIdPatch ? " AND sl.organization_id = " . intval($orgIdPatch) : "") . "
           ORDER BY sl.created_at DESC";
     $stockOuts = $db->query($query);
 } catch (Exception $e) {
