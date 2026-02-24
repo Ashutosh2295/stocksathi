@@ -7,16 +7,32 @@ class Database {
     private static $instance = null;
     private $conn;
     
-    // Database credentials
-    private $host = 'localhost';
-    private $dbname = 'stocksathi';
-    private $username = 'root';
-    private $password = '';
+    private $host;
+    private $dbname;
+    private $username;
+    private $password;
+    
+    private function loadCredentials() {
+        $envFile = __DIR__ . '/../db_config.php';
+        if (file_exists($envFile)) {
+            $cfg = require $envFile;
+            $this->host = $cfg['host'] ?? 'localhost';
+            $this->dbname = $cfg['dbname'] ?? 'stocksathi';
+            $this->username = $cfg['username'] ?? 'root';
+            $this->password = $cfg['password'] ?? '';
+        } else {
+            $this->host = 'localhost';
+            $this->dbname = 'stocksathi';
+            $this->username = 'root';
+            $this->password = '';
+        }
+    }
     
     /**
      * Private constructor to prevent direct instantiation
      */
     private function __construct() {
+        $this->loadCredentials();
         try {
             $this->conn = new PDO(
                 "mysql:host={$this->host};dbname={$this->dbname};charset=utf8mb4",

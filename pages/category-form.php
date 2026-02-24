@@ -49,12 +49,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $messageType = 'error';
             } else {
                 // Create
-                $query = "INSERT INTO categories (name, description, parent_id, status) VALUES (?, ?, ?, ?)";
+                $query = "INSERT INTO categories (name, description, parent_id, status, organization_id) VALUES (?, ?, ?, ?, ?)";
                 $db->execute($query, [
                     $data['name'],
                     $data['description'] ?? null,
                     $data['parent_id'],
-                    $data['status'] ?? 'active'
+                    $data['status'] ?? 'active',
+                    $orgIdPatch
                 ]);
                 Session::setFlash('Category created successfully', 'success');
                 header('Location: ' . BASE_PATH . '/pages/categories.php');

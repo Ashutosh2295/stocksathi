@@ -153,9 +153,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                             // Log stock out
                             $db->execute(
-                                "INSERT INTO stock_logs (product_id, type, quantity, reference_type, reference_id, notes, created_by) 
-                                 VALUES (?, 'out', ?, 'invoice', ?, ?, ?)",
-                                [$productId, $quantity, $invoiceId, 'Invoice: ' . $invoiceNumber, $userId]
+                                "INSERT INTO stock_logs (product_id, type, quantity, reference_type, reference_id, notes, created_by, organization_id) 
+                                 VALUES (?, 'out', ?, 'invoice', ?, ?, ?, ?)",
+                                [$productId, $quantity, $invoiceId, 'Invoice: ' . $invoiceNumber, $userId, $orgIdPatch]
                             );
                         }
                         

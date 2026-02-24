@@ -11,7 +11,7 @@ if ($userId) {
 $orgIdPatch = isset($_SESSION['organization_id']) ? $_SESSION['organization_id'] : (class_exists('Session') ? Session::getOrganizationId() : null);
 $orgFilter = $orgIdPatch ? " organization_id = " . intval($orgIdPatch) . " AND " : "";
 $orgWhere = $orgIdPatch ? " WHERE organization_id = " . intval($orgIdPatch) . " " : "";
-        $db->execute("UPDATE notifications SET is_read = TRUE WHERE user_id = ? OR user_id IS NULL", [$userId]);
+        $db->execute("UPDATE notifications SET is_read = TRUE WHERE " . ($orgIdPatch ? "organization_id = " . intval($orgIdPatch) . " AND " : "") . "(user_id = ? OR user_id IS NULL)", [$userId]);
     } catch (Exception $e) {}
 }
 

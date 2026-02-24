@@ -77,8 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 // Create new product (no expiry_date - column not in schema)
                 $query = "INSERT INTO products (name, description, category_id, brand_id, unit, sku, barcode, 
-                         purchase_price, selling_price, stock_quantity, min_stock_level, tax_rate, status) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                         purchase_price, selling_price, stock_quantity, min_stock_level, tax_rate, status, organization_id) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 $id = $db->execute($query, [
                     $data['name'],
                     $data['description'] ?? null,
@@ -92,7 +92,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $data['stock_quantity'],
                     $data['min_stock_level'],
                     $data['tax_rate'],
-                    $data['status'] ?? 'active'
+                    $data['status'] ?? 'active',
+                    $orgIdPatch
                 ]);
                 
                 Session::setFlash('Product created successfully', 'success');

@@ -4,12 +4,6 @@
  * Uses Stocksathi Design System
  */
 
-// Enable error display for debugging
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
-// Increase timeout to prevent loading issues
 set_time_limit(60);
 ini_set('max_execution_time', 60);
 
@@ -57,8 +51,7 @@ $orgWhere = $orgIdPatch ? " WHERE organization_id = " . intval($orgIdPatch) . " 
             // Start transaction
             $conn->beginTransaction();
             
-            // Check if email already exists
-            $checkStmt = $conn->prepare("SELECT id FROM users WHERE {$orgFilter} email = ? OR username = ?");
+            $checkStmt = $conn->prepare("SELECT id FROM users WHERE email = ? OR username = ?");
             $checkStmt->execute([$admin_email, $admin_username]);
             if ($checkStmt->fetch()) {
                 $error = 'Email or username already exists';

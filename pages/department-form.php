@@ -49,18 +49,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($action === 'create') {
                 // Check if department name already exists
-                $existing = $db->queryOne("SELECT id FROM departments WHERE name = ?", [$data['name']]);
+                $existing = $db->queryOne("SELECT id FROM departments WHERE {$orgFilter} name = ?", [$data['name']]);
                 if ($existing) {
                     $message = 'Department name already exists';
                     $messageType = 'error';
                 } else {
-                    $query = "INSERT INTO departments (name, code, description, manager_id, status) VALUES (?, ?, ?, ?, ?)";
+                    $query = "INSERT INTO departments (name, code, description, manager_id, status, organization_id) VALUES (?, ?, ?, ?, ?, ?)";
                     $id = $db->execute($query, [
                         $data['name'],
                         $data['code'] ?? null,
                         $data['description'] ?? null,
                         !empty($data['manager_id']) ? (int)$data['manager_id'] : null,
-                        $data['status'] ?? 'active'
+                        $data['status'] ?? 'active',
+                        $orgIdPatch
                     ]);
                     
                     Session::setFlash('Department created successfully', 'success');
@@ -69,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             } elseif ($action === 'update') {
                 // Check if department name exists for another department
-                $existing = $db->queryOne("SELECT id FROM departments WHERE name = ? AND id != ?", [$data['name'], $departmentId]);
+                $existing = $db->queryOne("SELECT id FROM departments WHERE {$orgFilter} name = ? AND id != ?", [$data['name'], $departmentId]);
                 if ($existing) {
                     $message = 'Department name already exists for another department';
                     $messageType = 'error';

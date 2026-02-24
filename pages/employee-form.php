@@ -63,8 +63,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $message = 'Email already exists';
                     $messageType = 'error';
                 } else {
-                    $query = "INSERT INTO employees (employee_code, user_id, first_name, last_name, email, phone, department_id, designation, date_of_birth, date_of_joining, gender, address, city, state, pincode, status) 
-                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    $query = "INSERT INTO employees (employee_code, user_id, first_name, last_name, email, phone, department_id, designation, date_of_birth, date_of_joining, gender, address, city, state, pincode, status, organization_id) 
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                     $id = $db->execute($query, [
                         $data['employee_code'],
                         !empty($data['user_id']) ? (int)$data['user_id'] : null,
@@ -81,7 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $data['city'] ?? null,
                         $data['state'] ?? null,
                         $data['pincode'] ?? null,
-                        $data['status'] ?? 'active'
+                        $data['status'] ?? 'active',
+                        $orgIdPatch
                     ]);
                     
                     Session::setFlash('Employee created successfully', 'success');
