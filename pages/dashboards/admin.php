@@ -24,6 +24,64 @@ $orgId = Session::getOrganizationId();
 $orgFilter = $orgId ? "organization_id = " . intval($orgId) . " AND " : "";
 $orgWhere = $orgId ? "WHERE organization_id = " . intval($orgId) . " " : "";
 
+// One-click: insert test data so dashboard shows real data (admin/super_admin only)
+if (isset($_GET['seed']) && $_GET['seed'] === '1' && in_array(Session::getUserRole(), ['super_admin', 'admin'])) {
+    try {
+        $today = date('Y-m-d');
+        
+        // Ensure some categories and products exist for the chart
+        $catCount = $db->queryOne("SELECT COUNT(*) as c FROM categories WHERE {$orgFilter} 1=1")['c'];
+        if ($catCount == 0) {
+            $categories = ['Electronics', 'Groceries', 'Clothing', 'Services'];
+            foreach ($categories as $cat) {
+                $db->execute("INSERT INTO categories (name, organization_id) VALUES (?, ?)", [$cat, $orgIdPatch]);
+            }
+        }
+        
+        $prodCount = $db->queryOne("SELECT COUNT(*) as c FROM products WHERE {$orgFilter} 1=1")['c'];
+        if ($prodCount == 0) {
+            $cats = $db->query("SELECT id FROM categories WHERE {$orgFilter} 1=1");
+            foreach ($cats as $c) {
+                for ($i = 1; $i <= 3; $i++) {
+                    $db->execute(
+                        "INSERT INTO products (name, category_id, stock_quantity, purchase_price, selling_price, status, organization_id) 
+                         VALUES (?, ?, ?, ?, ?, 'active', ?)",
+                        ["Product " . rand(100, 999), $c['id'], rand(10, 100), rand(100, 500), rand(600, 1000), $orgIdPatch]
+                    );
+                }
+            }
+        }
+
+        // Add 5 sample invoices scattered over last 30 days
+        for ($i = 0; $i < 5; $i++) {
+            $date = date('Y-m-d', strtotime("-" . rand(0, 30) . " days"));
+            $amt = rand(1000, 50000);
+            $invNum = 'INV-SEED-' . rand(1000, 9999);
+            $db->execute(
+                "INSERT INTO invoices (invoice_number, customer_id, invoice_date, due_date, subtotal, tax_amount, discount_amount, total_amount, paid_amount, payment_status, status, created_by, organization_id) 
+                 VALUES (?, NULL, ?, ?, ?, 0, 0, ?, ?, 'paid', 'finalized', ?, ?)",
+                [$invNum, $date, $date, $amt, $amt, $amt, $userId, $orgIdPatch]
+            );
+        }
+        // Add sample expenses
+        for ($i = 0; $i < 3; $i++) {
+            $date = date('Y-m-d', strtotime("-" . rand(0, 30) . " days"));
+            $amt = rand(500, 10000);
+            $expNum = 'EXP-SEED-' . rand(1000, 9999);
+            $db->execute(
+                "INSERT INTO expenses (expense_number, category, amount, expense_date, status, created_by, organization_id) 
+                 VALUES (?, 'Sample Data', ?, ?, 'approved', ?, ?)",
+                [$expNum, $amt, $date, $userId, $orgIdPatch]
+            );
+        }
+        Session::setFlash('Sample data (Categories, Products, Invoices, Expenses) seeded successfully.', 'success');
+    } catch (Exception $e) {
+        Session::setFlash('Could not seed data: ' . $e->getMessage(), 'error');
+    }
+    header('Location: ' . BASE_PATH . '/pages/dashboards/admin.php');
+    exit;
+}
+
 // Get dashboard statistics with comprehensive data
 try {
     // === FINANCIAL OVERVIEW ===
@@ -31,7 +89,7 @@ try {
     $totalRevenue = $db->queryOne("SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices WHERE {$orgFilter} (payment_status = 'paid' OR payment_status = 'partial') AND status != 'cancelled'")['total'];
     
     // Total Expenses - include all approved expenses
-    $totalExpenses = $db->queryOne("SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE {$orgFilter} status = 'approved' OR status = 'paid'")['total'];
+    $totalExpenses = $db->queryOne("SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE {$orgFilter} (status = 'approved' OR status = 'paid')")['total'];
     
     // Monthly Expenses - current month expenses
     $monthlyExpensesQuery = $db->queryOne("SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE {$orgFilter} MONTH(expense_date) = MONTH(CURDATE()) AND YEAR(expense_date) = YEAR(CURDATE()) AND (status = 'approved' OR status = 'paid')");
@@ -144,31 +202,71 @@ try {
         $pendingReturns = 0;
     }
     
-    // === SALES TREND (Last 7 days) ===
+    // === SALES TREND (Dynamic Range) ===
+    $chartRange = $_GET['range'] ?? '30days';
+    $interval = '7 DAY';
+    $dateFormat = '%Y-%m-%d';
+    $points = 7;
+    $useMonthLabels = false;
+    
+    if ($chartRange === '30days') {
+        $interval = '30 DAY';
+        $points = 30;
+    } elseif ($chartRange === '7days') {
+        $interval = '7 DAY';
+        $points = 7;
+    } elseif ($chartRange === '12months') {
+        $interval = '12 MONTH';
+        $points = 12;
+        $useMonthLabels = true;
+    } elseif ($chartRange === 'all') {
+        $interval = '120 MONTH'; // 10 years roughly for 'all'
+        $points = 24; // show last 24 months
+        $useMonthLabels = true;
+    }
+
     $salesTrend = $db->query("
-        SELECT DATE(invoice_date) as date, COALESCE(SUM(total_amount), 0) as total
+        SELECT " . ($useMonthLabels ? "DATE_FORMAT(invoice_date, '%Y-%m')" : "DATE(invoice_date)") . " as date, 
+        COALESCE(SUM(total_amount), 0) as total
         FROM invoices
-        WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-        AND status != 'cancelled'" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . "
-        GROUP BY DATE(invoice_date)
+        WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL $interval)
+        AND status != 'cancelled' AND ({$orgFilter} 1=1)
+        GROUP BY 1
         ORDER BY date ASC
     ");
     
-    // Fill in missing dates
+    // Fill in missing points
     $dateLabels = [];
     $dateValues = [];
-    for ($i = 6; $i >= 0; $i--) {
-        $date = date('Y-m-d', strtotime("-$i days"));
-        $dateLabels[] = date('D', strtotime($date));
-        $found = false;
-        foreach ($salesTrend as $row) {
-            if ($row['date'] == $date) {
-                $dateValues[] = (float)$row['total'];
-                $found = true;
-                break;
+    
+    if ($useMonthLabels) {
+        for ($i = $points - 1; $i >= 0; $i--) {
+            $date = date('Y-m', strtotime("-$i months"));
+            $dateLabels[] = date('M Y', strtotime($date . '-01'));
+            $found = false;
+            foreach ($salesTrend as $row) {
+                if ($row['date'] == $date) {
+                    $dateValues[] = (float)$row['total'];
+                    $found = true;
+                    break;
+                }
             }
+            if (!$found) $dateValues[] = 0;
         }
-        if (!$found) $dateValues[] = 0;
+    } else {
+        for ($i = ($points - 1); $i >= 0; $i--) {
+            $date = date('Y-m-d', strtotime("-$i days"));
+            $dateLabels[] = ($chartRange === '30days') ? date('d M', strtotime($date)) : date('D', strtotime($date));
+            $found = false;
+            foreach ($salesTrend as $row) {
+                if ($row['date'] == $date) {
+                    $dateValues[] = (float)$row['total'];
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) $dateValues[] = 0;
+        }
     }
     
     // === CATEGORY BREAKDOWN ===
@@ -240,7 +338,7 @@ function timeAgo($datetime) {
     <link rel="stylesheet" href="<?= CSS_PATH ?>/components.css">
     <link rel="stylesheet" href="<?= CSS_PATH ?>/layout.css">
     <link rel="stylesheet" href="<?= CSS_PATH ?>/nav-dropdown.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="<?= BASE_PATH ?>/js/theme-manager.js"></script>
 </head>
 <body>
@@ -251,8 +349,8 @@ function timeAgo($datetime) {
             <?php include __DIR__ . '/../../_includes/header.php'; ?>
             
             <main class="content">
-    <!-- Chart.js must be inside main for PJAX -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- ApexCharts must be inside main for PJAX -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <style>
         .dashboard-grid { display: grid; gap: 24px; }
         .dashboard-header { 
@@ -406,14 +504,23 @@ function timeAgo($datetime) {
             .quick-actions-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
+                <?php 
+                $flash = Session::getFlash();
+                if ($flash): ?>
+                    <div class="alert alert-<?= $flash['type'] === 'success' ? 'success' : 'danger' ?> mb-6">
+                        <strong><?= $flash['type'] === 'success' ? 'Success!' : 'Error!' ?></strong> <?= htmlspecialchars($flash['message']) ?>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Dashboard Header with Financial Overview -->
-                <div class="dashboard-header">
+                <div class="dashboard-header mb-6">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1;">
                         <div>
                             <h1 style="margin: 0; font-size: 28px; font-weight: 700;">👑 Admin Dashboard</h1>
                             <p style="margin: 8px 0 0 0; opacity: 0.9; color: white;">Complete business overview • <?= date('l, F j, Y') ?></p>
                         </div>
-                        <div style="text-align: right;">
+                        <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                            <a href="?seed=1" class="btn btn-sm btn-ghost" style="border: 1px solid rgba(255,255,255,0.3); color: white;" onclick="return confirm('This will add 5 sample invoices and 3 expenses for testing. Proceed?')">🧪 Seed Sample Data</a>
                             <div id="liveTime" style="font-size: 24px; font-weight: 700;"><?= date('h:i A') ?></div>
                             <div id="lastUpdated" style="font-size: 12px; opacity: 0.8;">Last updated just now</div>
                         </div>
@@ -558,12 +665,18 @@ function timeAgo($datetime) {
                 <div class="grid grid-cols-2 gap-6 mb-6">
                     <!-- Sales Trend Chart -->
                     <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">📈 Sales Trend (Last 7 Days)</h3>
+                        <div class="card-header flex items-center justify-between">
+                            <h3 class="card-title">📈 Sales Trend</h3>
+                            <div class="range-selector flex gap-2">
+                                <a href="?range=7days" class="btn btn-xs <?= $chartRange === '7days' ? 'btn-primary' : 'btn-ghost' ?>">7D</a>
+                                <a href="?range=30days" class="btn btn-xs <?= $chartRange === '30days' ? 'btn-primary' : 'btn-ghost' ?>">30D</a>
+                                <a href="?range=12months" class="btn btn-xs <?= $chartRange === '12months' ? 'btn-primary' : 'btn-ghost' ?>">12M</a>
+                                <a href="?range=all" class="btn btn-xs <?= $chartRange === 'all' ? 'btn-primary' : 'btn-ghost' ?>">All</a>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
-                                <canvas id="salesTrendChart"></canvas>
+                                <div id="salesTrendChart" style="height: 100%;"></div>
                             </div>
                         </div>
                     </div>
@@ -575,7 +688,7 @@ function timeAgo($datetime) {
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
-                                <canvas id="categoryChart"></canvas>
+                                <div id="categoryChart" style="height: 100%;"></div>
                             </div>
                         </div>
                     </div>
@@ -722,137 +835,122 @@ function timeAgo($datetime) {
                     </div>
                 </div>
             
-<script>// Self-executing function so it works on direct load and AJAX load
+<script>
+// Self-executing function so it works on direct load and AJAX load
 function initAdminPage() {
-        function draw() {
-        if (window.adminSalesChart instanceof Chart) window.adminSalesChart.destroy();
-        if (window.adminCategoryChart instanceof Chart) window.adminCategoryChart.destroy();
+    function draw() {
+        if (window.adminSalesChart) window.adminSalesChart.destroy();
+        if (window.adminCategoryChart) window.adminCategoryChart.destroy();
         
-        const salesCtx = document.getElementById('salesTrendChart');
-        if (salesCtx) {
-            window.adminSalesChart = new Chart(salesCtx, {
-                type: 'line',
-                data: {
-                    labels: <?= json_encode($dateLabels ?: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']) ?>,
-                    datasets: [{
-                        label: 'Sales (₹)',
-                        data: <?= json_encode($dateValues ?: [0, 0, 0, 0, 0, 0, 0]) ?>,
-                        borderColor: 'rgb(79, 130, 213)',
-                        backgroundColor: 'rgba(79, 130, 213, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4,
-                        pointBackgroundColor: 'rgb(79, 130, 213)',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 5,
-                        pointHoverRadius: 7
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            padding: 12,
-                            titleFont: { size: 14, weight: 'bold' },
-                            bodyFont: { size: 13 },
-                            callbacks: {
-                                label: function(context) {
-                                    let value = context.parsed.y;
-                                    if (value >= 100000) return '₹' + (value/100000).toFixed(2) + 'L';
-                                    if (value >= 1000) return '₹' + (value/1000).toFixed(2) + 'K';
-                                    return '₹' + value.toFixed(2);
-                                }
+        // --- Sales Trend Chart ---
+        const salesElement = document.getElementById('salesTrendChart');
+        if (salesElement) {
+            const rawSalesData = <?= json_encode($dateValues ?: [0, 0, 0, 0, 0, 0, 0]) ?>;
+            const hasData = rawSalesData.some(val => val > 0);
+            
+            if (hasData) {
+                var salesOptions = {
+                    series: [{
+                        name: 'Sales (₹)',
+                        data: rawSalesData
+                    }],
+                    chart: {
+                        type: 'area',
+                        height: '100%',
+                        toolbar: { show: false },
+                        parentHeightOffset: 0
+                    },
+                    colors: ['#4f82d5'],
+                    fill: {
+                        type: 'gradient',
+                        gradient: {
+                            shadeIntensity: 1,
+                            opacityFrom: 0.4,
+                            opacityTo: 0.05,
+                            stops: [0, 100]
+                        }
+                    },
+                    dataLabels: { enabled: false },
+                    stroke: { curve: 'smooth', width: 3 },
+                    xaxis: {
+                        categories: <?= json_encode($dateLabels ?: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']) ?>,
+                        axisBorder: { show: false },
+                        axisTicks: { show: false },
+                        labels: {
+                            hideOverlappingLabels: true,
+                            rotate: -45,
+                            rotateAlways: false,
+                            style: { fontSize: '10px' }
+                        },
+                        tickAmount: <?= $chartRange === '30days' ? 10 : ($chartRange === '12months' ? 12 : ($chartRange === 'all' ? 12 : 'undefined')) ?>
+                    },
+                    yaxis: {
+                        labels: {
+                            formatter: function (value) {
+                                if (value >= 100000) return '₹' + (value/100000).toFixed(1) + 'L';
+                                if (value >= 1000) return '₹' + (value/1000).toFixed(1) + 'K';
+                                return '₹' + value;
                             }
                         }
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { 
-                                color: 'rgba(0,0,0,0.05)',
-                                drawBorder: false
-                            },
-                            ticks: {
-                                callback: function(value) {
-                                    if (value >= 100000) return '₹' + (value/100000).toFixed(1) + 'L';
-                                    if (value >= 1000) return '₹' + (value/1000).toFixed(1) + 'K';
-                                    return '₹' + value;
-                                },
-                                font: { size: 11 }
-                            }
-                        },
-                        x: { 
-                            grid: { display: false },
-                            ticks: { font: { size: 11 } }
-                        }
+                    grid: {
+                        borderColor: 'rgba(0,0,0,0.05)',
+                        strokeDashArray: 4,
                     }
-                }
-            });
-            if (window.adminSalesChart && window.adminSalesChart.resize) window.adminSalesChart.resize();
+                };
+
+                window.adminSalesChart = new ApexCharts(salesElement, salesOptions);
+                window.adminSalesChart.render();
+            } else {
+                const rangeText = '<?= $chartRange === "30days" ? "last 30 days" : ($chartRange === "12months" ? "last 12 months" : ($chartRange === "all" ? "the entire period" : "last 7 days")) ?>';
+                salesElement.parentElement.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary);"><p>No sales data available for ' + rangeText + '</p></div>';
+            }
         }
 
         // --- Category Chart ---
-        const categoryCtx = document.getElementById('categoryChart');
-        if (categoryCtx) {
+        const categoryElement = document.getElementById('categoryChart');
+        if (categoryElement) {
             const categoryData = <?= json_encode(array_map(function($c) { return ['name' => $c['name'] ?? '', 'value' => (float)($c['value'] ?? 0)]; }, $categoryBreakdown ?: [])) ?>;
+            const hasCategoryData = categoryData && categoryData.length > 0 && categoryData.some(c => c.value > 0);
             
-            if (categoryData && categoryData.length > 0) {
-                window.adminCategoryChart = new Chart(categoryCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: categoryData.map(c => c.name),
-                        datasets: [{
-                            data: categoryData.map(c => c.value),
-                            backgroundColor: [
-                                '#4f82d5',
-                                '#4ade80',
-                                '#f59e0b',
-                                '#0ea5e9',
-                                '#8b5cf6',
-                                '#ec4899'
-                            ],
-                            borderWidth: 0,
-                            hoverBorderWidth: 2,
-                            hoverBorderColor: '#fff'
-                        }]
+            if (hasCategoryData) {
+                var categoryOptions = {
+                    series: categoryData.map(c => c.value),
+                    labels: categoryData.map(c => c.name),
+                    chart: {
+                        type: 'donut',
+                        height: '100%'
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'right',
-                                labels: { 
-                                    padding: 15, 
-                                    usePointStyle: true,
-                                    font: { size: 12 }
-                                }
-                            },
-                            tooltip: {
-                                backgroundColor: 'rgba(0,0,0,0.8)',
-                                padding: 12,
-                                callbacks: {
-                                    label: function(context) {
-                                        let value = context.parsed;
-                                        if (value >= 100000) return context.label + ': ₹' + (value/100000).toFixed(2) + 'L';
-                                        if (value >= 1000) return context.label + ': ₹' + (value/1000).toFixed(2) + 'K';
-                                        return context.label + ': ₹' + value.toFixed(2);
-                                    }
-                                }
+                    colors: ['#4f82d5', '#4ade80', '#f59e0b', '#0ea5e9', '#8b5cf6', '#ec4899'],
+                    plotOptions: {
+                        pie: {
+                            donut: {
+                                size: '65%'
                             }
-                        },
-                        cutout: '65%'
+                        }
+                    },
+                    dataLabels: { enabled: false },
+                    legend: {
+                        position: 'right',
+                        fontSize: '12px',
+                        markers: { radius: 12 }
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function (value) {
+                                if (value >= 100000) return '₹' + (value/100000).toFixed(2) + 'L';
+                                if (value >= 1000) return '₹' + (value/1000).toFixed(2) + 'K';
+                                return '₹' + value.toFixed(2);
+                            }
+                        }
                     }
-                });
-                if (window.adminCategoryChart && window.adminCategoryChart.resize) window.adminCategoryChart.resize();
+                };
+
+                window.adminCategoryChart = new ApexCharts(categoryElement, categoryOptions);
+                window.adminCategoryChart.render();
             } else {
-                categoryCtx.parentElement.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary);"><p>No category data available yet</p></div>';
+                categoryElement.parentElement.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary);"><p>No category data available yet</p></div>';
             }
-        }
         }
         
         // --- Live time update ---
@@ -879,18 +977,22 @@ function initAdminPage() {
         if(window.adminTimeInterval) clearInterval(window.adminTimeInterval);
         window.adminTimeInterval = setInterval(updateLiveTime, 60000); // 1 min
 
-        var raf = window.requestAnimationFrame || function(f){setTimeout(f,16);};
-        raf(function(){ raf(draw); });
     }
 
-        if (typeof Chart === 'undefined') {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
-            script.onload = initAdminPage;
-            document.head.appendChild(script);
-        } else {
-            initAdminPage();
-        }</script>
+    if (typeof ApexCharts === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/apexcharts';
+        script.onload = function() {
+            window.requestAnimationFrame ? window.requestAnimationFrame(() => window.requestAnimationFrame(draw)) : setTimeout(draw, 16);
+        };
+        document.head.appendChild(script);
+    } else {
+        window.requestAnimationFrame ? window.requestAnimationFrame(() => window.requestAnimationFrame(draw)) : setTimeout(draw, 16);
+    }
+}
+    
+    initAdminPage();
+    </script>
 </main>
         </div>
     </div>

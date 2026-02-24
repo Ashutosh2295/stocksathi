@@ -209,7 +209,7 @@ function formatCurrency($amount) {
     <link rel="stylesheet" href="<?= CSS_PATH ?>/components.css">
     <link rel="stylesheet" href="<?= CSS_PATH ?>/layout.css">
     <link rel="stylesheet" href="<?= CSS_PATH ?>/nav-dropdown.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="<?= BASE_PATH ?>/js/theme-manager.js"></script>
     
 </head>
@@ -221,8 +221,8 @@ function formatCurrency($amount) {
             <?php include __DIR__ . '/../../_includes/header.php'; ?>
             
             <main class="content">
-    <!-- Chart.js must be inside main for PJAX -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- ApexCharts must be inside main for PJAX -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <style>
         .accountant-header {
             background: linear-gradient(135deg, #3a63a5 0%, #4f82d5 50%, #4f82d5 100%);
@@ -447,7 +447,7 @@ function formatCurrency($amount) {
                             <h3 class="card-title">📈 Revenue vs Expenses (6 Months)</h3>
                         </div>
                         <div class="card-body">
-                            <canvas id="revenueExpenseChart" height="300"></canvas>
+                            <div id="revenueExpenseChart" style="height: 300px;"></div>
                         </div>
                     </div>
 
@@ -564,74 +564,75 @@ function formatCurrency($amount) {
 
 <script>
         function initAccountantChart() {
-            if (typeof Chart === 'undefined') {
+            if (typeof ApexCharts === 'undefined') {
                 const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+                script.src = 'https://cdn.jsdelivr.net/npm/apexcharts';
                 script.onload = initAccountantChart;
                 document.head.appendChild(script);
                 return;
             }
             function draw() {
-            if (window.accountantChart instanceof Chart) window.accountantChart.destroy();
-            const ctx = document.getElementById('revenueExpenseChart');
-            if (ctx) {
-                window.accountantChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: <?= json_encode($monthLabels) ?>,
-                        datasets: [
-                            {
-                                label: 'Revenue',
-                                data: <?= json_encode($revenueData) ?>,
-                                backgroundColor: 'rgba(79, 130, 213, 0.7)',
-                                borderColor: 'rgb(79, 130, 213)',
-                                borderWidth: 1,
+                if (window.accountantChart) window.accountantChart.destroy();
+                const element = document.getElementById('revenueExpenseChart');
+                if (element) {
+                    var options = {
+                        series: [{
+                            name: 'Revenue',
+                            data: <?= json_encode($revenueData) ?>
+                        }, {
+                            name: 'Expenses',
+                            data: <?= json_encode($expenseData) ?>
+                        }],
+                        chart: {
+                            type: 'bar',
+                            height: 300,
+                            toolbar: { show: false }
+                        },
+                        colors: ['#4f82d5', '#ef4444'],
+                        plotOptions: {
+                            bar: {
+                                horizontal: false,
+                                columnWidth: '55%',
                                 borderRadius: 4
                             },
-                            {
-                                label: 'Expenses',
-                                data: <?= json_encode($expenseData) ?>,
-                                backgroundColor: 'rgba(239, 68, 68, 0.7)',
-                                borderColor: 'rgb(239, 68, 68)',
-                                borderWidth: 1,
-                                borderRadius: 4
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        let value = context.parsed.y;
-                                        if (value >= 100000) return context.dataset.label + ': ₹' + (value/100000).toFixed(2) + 'L';
-                                        if (value >= 1000) return context.dataset.label + ': ₹' + (value/1000).toFixed(2) + 'K';
-                                        return context.dataset.label + ': ₹' + value.toFixed(2);
-                                    }
+                        },
+                        dataLabels: {
+                            enabled: false
+                        },
+                        stroke: {
+                            show: true,
+                            width: 2,
+                            colors: ['transparent']
+                        },
+                        xaxis: {
+                            categories: <?= json_encode($monthLabels) ?>,
+                        },
+                        yaxis: {
+                            labels: {
+                                formatter: function (value) {
+                                    if (value >= 100000) return '₹' + (value/100000).toFixed(0) + 'L';
+                                    if (value >= 1000) return '₹' + (value/1000).toFixed(0) + 'K';
+                                    return '₹' + value;
                                 }
                             }
                         },
-                        scales: {
+                        fill: {
+                            opacity: 1
+                        },
+                        tooltip: {
                             y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value) {
-                                        if (value >= 100000) return '₹' + (value/100000).toFixed(0) + 'L';
-                                        if (value >= 1000) return '₹' + (value/1000).toFixed(0) + 'K';
-                                        return '₹' + value;
-                                    }
+                                formatter: function (value) {
+                                    if (value >= 100000) return '₹' + (value/100000).toFixed(2) + 'L';
+                                    if (value >= 1000) return '₹' + (value/1000).toFixed(2) + 'K';
+                                    return '₹' + value.toFixed(2);
                                 }
                             }
                         }
-                    }
-                });
-                if (window.accountantChart && window.accountantChart.resize) window.accountantChart.resize();
-            }
+                    };
+
+                    window.accountantChart = new ApexCharts(element, options);
+                    window.accountantChart.render();
+                }
             }
             var raf = window.requestAnimationFrame || function(f){setTimeout(f,16);};
             raf(function(){ raf(draw); });

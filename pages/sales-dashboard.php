@@ -92,7 +92,7 @@ function fmt($n) {
     <link rel="stylesheet" href="<?= CSS_PATH ?>/layout.css">
     <link rel="stylesheet" href="<?= CSS_PATH ?>/nav-dropdown.css">
     <script src="<?= BASE_PATH ?>/js/theme-manager.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 </head>
 <body>
     <div class="app-container">
@@ -145,13 +145,13 @@ function fmt($n) {
                     <div class="card">
                         <div class="card-header"><h3 class="card-title">📊 Revenue Overview (12 Months)</h3></div>
                         <div class="card-body" style="position:relative;height:300px;">
-                            <canvas id="revenueChart"></canvas>
+                            <div id="revenueChart" style="height: 100%;"></div>
                         </div>
                     </div>
                     <div class="card">
                         <div class="card-header"><h3 class="card-title">🎯 Top Products</h3></div>
                         <div class="card-body" style="position:relative;height:300px;">
-                            <canvas id="topProductsChart"></canvas>
+                            <div id="topProductsChart" style="height: 100%;"></div>
                         </div>
                     </div>
                 </div>
@@ -201,27 +201,76 @@ function fmt($n) {
     document.addEventListener('DOMContentLoaded', function() {
         const rev = document.getElementById('revenueChart');
         if (rev) {
-            new Chart(rev, {
-                type: 'line',
-                data: {
-                    labels: <?= json_encode($labels) ?>,
-                    datasets: [{ label: 'Revenue (₹)', data: <?= json_encode($data) ?>, borderColor: 'rgb(13, 148, 136)', backgroundColor: 'rgba(13, 148, 136, 0.1)', fill: true, tension: 0.4 }]
+            var optionsRev = {
+                series: [{
+                    name: 'Revenue (₹)',
+                    data: <?= json_encode($data) ?>
+                }],
+                chart: {
+                    type: 'area',
+                    height: 300,
+                    toolbar: { show: false }
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
-            });
+                colors: ['rgb(13, 148, 136)'],
+                fill: {
+                    type: 'gradient',
+                    gradient: {
+                        shadeIntensity: 1,
+                        opacityFrom: 0.4,
+                        opacityTo: 0.05,
+                        stops: [0, 100]
+                    }
+                },
+                dataLabels: { enabled: false },
+                stroke: { curve: 'smooth', width: 3 },
+                xaxis: { categories: <?= json_encode($labels) ?> },
+                yaxis: {
+                    labels: {
+                        formatter: function (value) {
+                            if (value >= 100000) return '₹' + (value/100000).toFixed(2) + 'L';
+                            if (value >= 1000) return '₹' + (value/1000).toFixed(2) + 'K';
+                            return '₹' + value;
+                        }
+                    }
+                },
+                grid: { borderColor: 'rgba(0,0,0,0.05)' },
+                tooltip: {
+                    y: {
+                        formatter: function (value) { return '₹' + value; }
+                    }
+                }
+            };
+            new ApexCharts(rev, optionsRev).render();
         }
+        
         const top = document.getElementById('topProductsChart');
         if (top) {
             const topLabels = <?= json_encode(array_column($topProducts, 'name')) ?>;
             const topData = <?= json_encode(array_column($topProducts, 'qty')) ?>;
-            new Chart(top, {
-                type: 'bar',
-                data: {
-                    labels: topLabels.length ? topLabels : ['No data'],
-                    datasets: [{ label: 'Units Sold', data: topData.length ? topData : [0], backgroundColor: ['rgba(13, 148, 136, 0.6)', 'rgba(20, 184, 166, 0.6)', 'rgba(45, 212, 191, 0.6)', 'rgba(94, 234, 212, 0.6)', 'rgba(153, 246, 228, 0.6)'], borderColor: '#0d9488', borderWidth: 1, borderRadius: 6 }]
+            var optionsTop = {
+                series: [{
+                    name: 'Units Sold',
+                    data: topData.length ? topData : [0]
+                }],
+                chart: {
+                    type: 'bar',
+                    height: 300,
+                    toolbar: { show: false }
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
-            });
+                colors: ['rgba(13, 148, 136, 0.8)'],
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        borderRadius: 6
+                    }
+                },
+                dataLabels: { enabled: false },
+                xaxis: {
+                    categories: topLabels.length ? topLabels : ['No data']
+                },
+                grid: { borderColor: 'rgba(0,0,0,0.05)' }
+            };
+            new ApexCharts(top, optionsTop).render();
         }
     });
     </script>

@@ -364,8 +364,8 @@ try {
         </div>
     </div>
 </header>
-<!-- Chart.js loaded early (outside main) so it's ready before dashboards - fixes blank charts on first load -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- ApexCharts loaded early (outside main) so it's ready before dashboards -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script src="<?= BASE_PATH ?>/js/theme-manager.js"></script>
 
 <script>

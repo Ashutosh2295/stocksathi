@@ -25,12 +25,15 @@ $orgId = Session::getOrganizationId();
 // Get dashboard statistics
 try {
     // Financial Overview
-    $totalRevenue = $db->queryOne("SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices WHERE payment_status = 'paid' AND organization_id = ?", [$orgId])['total'];
-    $totalExpenses = $db->queryOne("SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE {$orgFilter} status = 'approved' AND organization_id = ?", [$orgId])['total'];
+    // Total Revenue - include all paid/partial invoices
+    $totalRevenue = $db->queryOne("SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices WHERE (payment_status = 'paid' OR payment_status = 'partial') AND status != 'cancelled' AND organization_id = ?", [$orgId])['total'];
+    
+    // Total Expenses - include all approved expenses
+    $totalExpenses = $db->queryOne("SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE (status = 'approved' OR status = 'paid') AND organization_id = ?", [$orgId])['total'];
     $netProfit = $totalRevenue - $totalExpenses;
     
     // GST Summary
-    $gstCollected = $db->queryOne("SELECT COALESCE(SUM(tax_amount), 0) as total FROM invoices WHERE {$orgFilter} MONTH(invoice_date) = MONTH(CURRENT_DATE()) AND organization_id = ?", [$orgId])['total'];
+    $gstCollected = $db->queryOne("SELECT COALESCE(SUM(tax_amount), 0) as total FROM invoices WHERE MONTH(invoice_date) = MONTH(CURRENT_DATE()) AND organization_id = ?", [$orgId])['total'];
     
     // Inventory Stats
     $totalProducts = $db->queryOne("SELECT COUNT(*) as count FROM products WHERE organization_id = ?", [$orgId])['count'];
@@ -38,15 +41,15 @@ try {
     $stockValue = $db->queryOne("SELECT COALESCE(SUM(purchase_price * stock_quantity), 0) as total FROM products WHERE organization_id = ?", [$orgId])['total'];
     
     //Sales Stats
-    $todaySales = $db->queryOne("SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices WHERE {$orgFilter} DATE(invoice_date) = CURDATE() AND organization_id = ?", [$orgId])['total'];
-    $monthSales = $db->queryOne("SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices WHERE {$orgFilter} MONTH(invoice_date) = MONTH(CURDATE()) AND organization_id = ?", [$orgId])['total'];
+    $todaySales = $db->queryOne("SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices WHERE DATE(invoice_date) = CURDATE() AND organization_id = ?", [$orgId])['total'];
+    $monthSales = $db->queryOne("SELECT COALESCE(SUM(total_amount), 0) as total FROM invoices WHERE MONTH(invoice_date) = MONTH(CURDATE()) AND organization_id = ?", [$orgId])['total'];
     
     // Customer Stats
-    $totalCustomers = $db->queryOne("SELECT COUNT(*) as count FROM customers WHERE {$orgFilter} status = 'active' AND organization_id = ?", [$orgId])['count'];
-    $pendingPayments = $db->queryOne("SELECT COALESCE(SUM(total_amount - COALESCE(paid_amount, 0)), 0) as total FROM invoices WHERE {$orgFilter} (payment_status = 'unpaid' OR payment_status = 'partial') AND status != 'cancelled' AND organization_id = ?", [$orgId])['total'];
+    $totalCustomers = $db->queryOne("SELECT COUNT(*) as count FROM customers WHERE status = 'active' AND organization_id = ?", [$orgId])['count'];
+    $pendingPayments = $db->queryOne("SELECT COALESCE(SUM(total_amount - COALESCE(paid_amount, 0)), 0) as total FROM invoices WHERE (payment_status = 'unpaid' OR payment_status = 'partial') AND status != 'cancelled' AND organization_id = ?", [$orgId])['total'];
     
     // Employee Performance
-    $activeEmployees = $db->queryOne("SELECT COUNT(*) as count FROM users WHERE {$orgFilter} status = 'active' AND organization_id = ?", [$orgId])['count'];
+    $activeEmployees = $db->queryOne("SELECT COUNT(*) as count FROM users WHERE status = 'active' AND organization_id = ?", [$orgId])['count'];
     
     // Top Products
     $topProducts = $db->query("
@@ -60,11 +63,11 @@ try {
         LIMIT 5
     ", [$orgId]);
     
-    // Sales trend (last 7 days) for chart
+    // Sales trend (last 30 days) for chart
     $salesTrend = $db->query("
         SELECT DATE(invoice_date) as date, COALESCE(SUM(total_amount), 0) as total
         FROM invoices
-        WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND status != 'cancelled' AND organization_id = ?
+        WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND status != 'cancelled' AND organization_id = ?
         GROUP BY DATE(invoice_date)
         ORDER BY date ASC
     ", [$orgId]);
@@ -101,8 +104,8 @@ function formatCurrency($amount) {
     <link rel="stylesheet" href="<?= CSS_PATH ?>/components.css">
     <link rel="stylesheet" href="<?= CSS_PATH ?>/layout.css">
     <link rel="stylesheet" href="<?= CSS_PATH ?>/nav-dropdown.css">
-    <!-- Chart.js + Theme - load in head so ready before chart init -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- ApexCharts + Theme - load in head so ready before chart init -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="<?= BASE_PATH ?>/js/theme-manager.js"></script>
 </head>
 <body>
@@ -113,8 +116,8 @@ function formatCurrency($amount) {
             <?php include __DIR__ . '/../../_includes/header.php'; ?>
             
             <main class="content">
-    <!-- Chart.js must be inside main for PJAX -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- ApexCharts must be inside main for PJAX -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
                 <!-- Page Header -->
                 <div class="content-header">
                     <div>
@@ -193,7 +196,7 @@ function formatCurrency($amount) {
                         <h3 class="card-title">📈 Sales Trend (Last 7 Days)</h3>
                     </div>
                     <div class="card-body" style="position:relative;height:280px;">
-                        <canvas id="salesTrendChart"></canvas>
+                        <div id="salesTrendChart" style="height: 100%;"></div>
                     </div>
                 </div>
 
@@ -301,67 +304,95 @@ function formatCurrency($amount) {
     
     <script>
     function initSuperAdminChart() {
-        if (typeof Chart === 'undefined') {
+        if (typeof ApexCharts === 'undefined') {
             const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+            script.src = 'https://cdn.jsdelivr.net/npm/apexcharts';
             script.onload = initSuperAdminChart;
             document.head.appendChild(script);
             return;
         }
         function draw() {
-        if (window.superAdminChart instanceof Chart) window.superAdminChart.destroy();
-        const ctx = document.getElementById('salesTrendChart');
-        if (!ctx) return;
-        <?php
-        $dateLabels = [];
-        $dateValues = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $d = date('Y-m-d', strtotime("-$i days"));
-            $dateLabels[] = date('D', strtotime($d));
-            $v = 0;
-            if (!empty($salesTrend)) {
-                foreach ($salesTrend as $row) {
-                    if (isset($row['date']) && $row['date'] === $d) { $v = (float)($row['total'] ?? 0); break; }
+            if (window.superAdminChart) window.superAdminChart.destroy();
+            const canvas = document.getElementById('salesTrendChart');
+            if (!canvas) return;
+            <?php
+            $dateLabels = [];
+            $dateValues = [];
+            for ($i = 29; $i >= 0; $i--) {
+                $d = date('Y-m-d', strtotime("-$i days"));
+                $dateLabels[] = date('d M', strtotime($d));
+                $v = 0;
+                if (!empty($salesTrend)) {
+                    foreach ($salesTrend as $row) {
+                        if (isset($row['date']) && $row['date'] === $d) { $v = (float)($row['total'] ?? 0); break; }
+                    }
                 }
+                $dateValues[] = $v;
             }
-            $dateValues[] = $v;
-        }
-        ?>
-        const labels = <?= json_encode($dateLabels) ?>;
-        const data = <?= json_encode($dateValues) ?>;
-        window.superAdminChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Sales (₹)',
-                    data: data,
-                    borderColor: 'rgb(79, 130, 213)',
-                    backgroundColor: 'rgba(79, 130, 213, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: data.some(v => v > 0) ? 4 : 0,
-                    pointHoverRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        suggestedMax: Math.max.apply(null, data) > 0 ? undefined : 1000,
-                        ticks: { callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(0) + 'K' : v) }
+            ?>
+            const labels = <?= json_encode($dateLabels) ?>;
+            const data = <?= json_encode($dateValues) ?>;
+            const hasData = data.some(val => val > 0);
+            
+            if (hasData) {
+                var options = {
+                    series: [{
+                        name: 'Sales (₹)',
+                        data: data
+                    }],
+                    chart: {
+                        type: 'area',
+                        height: 280,
+                        toolbar: { show: false }
                     },
-                    x: { grid: { display: false } }
-                }
+                    colors: ['#4f82d5'],
+                    fill: {
+                        type: 'gradient',
+                        gradient: {
+                            shadeIntensity: 1,
+                            opacityFrom: 0.4,
+                            opacityTo: 0.05,
+                            stops: [0, 100]
+                        }
+                    },
+                    dataLabels: { enabled: false },
+                    stroke: { curve: 'smooth', width: 3 },
+                    xaxis: {
+                        categories: labels,
+                        labels: {
+                            hideOverlappingLabels: true,
+                            rotate: -45,
+                            style: { fontSize: '10px' }
+                        },
+                        tickAmount: 10
+                    },
+                    yaxis: {
+                        labels: {
+                            formatter: function (value) {
+                                if (value >= 1000) return '₹' + (value/1000).toFixed(0) + 'K';
+                                return '₹' + value;
+                            }
+                        }
+                    },
+                    grid: {
+                        borderColor: 'rgba(0,0,0,0.05)'
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function (value) {
+                                return '₹' + value;
+                            }
+                        }
+                    }
+                };
+
+                window.superAdminChart = new ApexCharts(canvas, options);
+                window.superAdminChart.render();
+            } else {
+                canvas.parentElement.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary);"><p>No sales data available for the last 7 days</p></div>';
             }
-        });
-        if (window.superAdminChart.resize) window.superAdminChart.resize();
         }
-        var raf = window.requestAnimationFrame || function(f){setTimeout(f,16);};
-        raf(function(){ raf(draw); });
+        window.requestAnimationFrame ? window.requestAnimationFrame(() => window.requestAnimationFrame(draw)) : setTimeout(draw, 16);
     }
     initSuperAdminChart();
     </script>

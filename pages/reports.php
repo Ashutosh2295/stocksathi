@@ -236,14 +236,13 @@ try {
     $topProducts = $db->query($topProductsQuery);
     
     $salesTrendQuery = "SELECT 
-                       DATE_FORMAT(invoice_date, '%Y-%u') as week,
-                       SUM(total_amount) as weekly_sales
+                       DATE_FORMAT(invoice_date, '%Y-%m') as month,
+                       SUM(total_amount) as monthly_sales
                        FROM invoices
-                       WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                       WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
                        AND status != 'cancelled'" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . "
-                       GROUP BY DATE_FORMAT(invoice_date, '%Y-%u')
-                       ORDER BY week ASC
-                       LIMIT 4";
+                       GROUP BY DATE_FORMAT(invoice_date, '%Y-%m')
+                       ORDER BY month ASC";
     $salesTrend = $db->query($salesTrendQuery);
     
 } catch (Exception $e) {
@@ -270,7 +269,7 @@ try {
     <link rel="stylesheet" href="<?= CSS_PATH ?>/components.css">
     <link rel="stylesheet" href="<?= CSS_PATH ?>/layout.css">
     <link rel="stylesheet" href="<?= CSS_PATH ?>/nav-dropdown.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <?php if ($isPrint): ?>
     <style>
         @media print {
@@ -343,7 +342,7 @@ try {
                             <h3 class="card-title">Sales Trend (Last 30 Days)</h3>
                         </div>
                         <div class="card-body">
-                            <canvas id="salesTrendChart" height="250"></canvas>
+                            <div id="salesTrendChart" style="height: 100%;"></div>
                         </div>
                     </div>
                     <div class="card">
@@ -502,43 +501,68 @@ try {
                 <script>
                     // Initialize charts when page loads or via AJAX
                     (function initReportsChart() {
-                        if (typeof Chart !== 'undefined') {
-                            if (window.reportsSalesChart instanceof Chart) {
+                        if (typeof ApexCharts !== 'undefined') {
+                            if (window.reportsSalesChart) {
                                 window.reportsSalesChart.destroy();
                             }
                             const ctx = document.getElementById('salesTrendChart');
                             if (ctx) {
-                                const salesData = <?= json_encode(array_column($salesTrend, 'weekly_sales')) ?>;
-                                const weekLabels = <?= json_encode(array_map(function($w) { return 'Week ' . substr($w, -1); }, array_column($salesTrend, 'week'))) ?>;
+                                const salesData = <?= json_encode(array_column($salesTrend, 'monthly_sales')) ?>;
+                                const monthLabels = <?= json_encode(array_map(function($m) { 
+                                    return date('M', strtotime($m . '-01')); 
+                                }, array_column($salesTrend, 'month'))) ?>;
                                 
-                                window.reportsSalesChart = new Chart(ctx, {
-                                    type: 'line',
-                                    data: {
-                                        labels: weekLabels.length > 0 ? weekLabels : ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                                        datasets: [{
-                                            label: 'Sales (₹)',
-                                            data: salesData.length > 0 ? salesData : [0, 0, 0, 0],
-                                            borderColor: 'rgb(15, 118, 110)',
-                                            backgroundColor: 'rgba(15, 118, 110, 0.1)',
-                                            tension: 0.4
-                                        }]
+                                var options = {
+                                    series: [{
+                                        name: 'Sales (₹)',
+                                        data: salesData.length > 0 ? salesData : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                                    }],
+                                    chart: {
+                                        type: 'line',
+                                        height: 350,
+                                        zoom: { enabled: false },
+                                        toolbar: { show: false }
                                     },
-                                    options: {
-                                        responsive: true,
-                                        maintainAspectRatio: false,
-                                        plugins: {
-                                            legend: {
-                                                display: true,
-                                                position: 'top'
-                                            }
+                                    dataLabels: {
+                                        enabled: false
+                                    },
+                                    stroke: {
+                                        curve: 'straight',
+                                        width: 3
+                                    },
+                                    title: {
+                                        text: 'Product Trends by Month',
+                                        align: 'left'
+                                    },
+                                    grid: {
+                                        row: {
+                                            colors: ['#f3f3f3', 'transparent'],
+                                            opacity: 0.5
                                         },
-                                        scales: {
-                                            y: {
-                                                beginAtZero: true
+                                        borderColor: 'rgba(0,0,0,0.05)'
+                                    },
+                                    xaxis: {
+                                        categories: monthLabels.length > 0 ? monthLabels : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                                    },
+                                    yaxis: {
+                                        labels: {
+                                            formatter: function (value) {
+                                                if (value >= 1000) return '₹' + (value/1000).toFixed(0) + 'K';
+                                                return '₹' + value;
+                                            }
+                                        }
+                                    },
+                                    tooltip: {
+                                        y: {
+                                            formatter: function (value) {
+                                                return '₹' + value;
                                             }
                                         }
                                     }
-                                });
+                                };
+                                
+                                window.reportsSalesChart = new ApexCharts(ctx, options);
+                                window.reportsSalesChart.render();
                             }
                         }
                     })();

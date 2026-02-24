@@ -213,7 +213,7 @@ function formatCurrency($amount) {
     <link rel="stylesheet" href="<?= CSS_PATH ?>/components.css">
     <link rel="stylesheet" href="<?= CSS_PATH ?>/layout.css">
     <link rel="stylesheet" href="<?= CSS_PATH ?>/nav-dropdown.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="<?= BASE_PATH ?>/js/theme-manager.js"></script>
     
 </head>
@@ -225,8 +225,8 @@ function formatCurrency($amount) {
             <?php include __DIR__ . '/../../_includes/header.php'; ?>
             
             <main class="content">
-    <!-- Chart.js must be inside main for PJAX -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- ApexCharts must be inside main for PJAX -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <style>
         .store-header {
             background: linear-gradient(135deg, #3a63a5 0%, #4f82d5 50%, #4f82d5 100%);
@@ -474,7 +474,7 @@ function formatCurrency($amount) {
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
-                                <canvas id="hourlyChart"></canvas>
+                                <div id="hourlyChart" style="height: 100%;"></div>
                             </div>
                         </div>
                     </div>
@@ -595,53 +595,65 @@ function formatCurrency($amount) {
             
 <script>
     function initStoreManagerChart() {
-        if (typeof Chart === 'undefined') {
+        if (typeof ApexCharts === 'undefined') {
             const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+            script.src = 'https://cdn.jsdelivr.net/npm/apexcharts';
             script.onload = initStoreManagerChart;
             document.head.appendChild(script);
             return;
         }
         function draw() {
-        if (window.storeManagerHourlyChart instanceof Chart) window.storeManagerHourlyChart.destroy();
-        const canvas = document.getElementById('hourlyChart');
-        if (canvas) {
-            window.storeManagerHourlyChart = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: <?= json_encode($hourlyLabels) ?>,
-                    datasets: [{
-                        label: 'Sales (₹)',
-                        data: <?= json_encode($hourlyValues) ?>,
-                        backgroundColor: 'rgba(79, 130, 213, 0.7)',
-                        borderColor: 'rgb(79, 130, 213)',
-                        borderWidth: 2,
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
+            if (window.storeManagerHourlyChart) window.storeManagerHourlyChart.destroy();
+            const canvas = document.getElementById('hourlyChart');
+            if (canvas) {
+                var options = {
+                    series: [{
+                        name: 'Sales (₹)',
+                        data: <?= json_encode($hourlyValues) ?>
+                    }],
+                    chart: {
+                        type: 'bar',
+                        height: 250,
+                        toolbar: { show: false }
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(0,0,0,0.05)' },
-                            ticks: {
-                                callback: value => {
-                                    if (value >= 1000) return '₹' + (value/1000).toFixed(0) + 'K';
-                                    return '₹' + value;
-                                }
+                    colors: ['rgba(79, 130, 213, 0.7)'],
+                    plotOptions: {
+                        bar: {
+                            borderRadius: 6,
+                            horizontal: false,
+                        }
+                    },
+                    dataLabels: { enabled: false },
+                    stroke: {
+                        show: true,
+                        width: 2,
+                        colors: ['rgb(79, 130, 213)']
+                    },
+                    xaxis: {
+                        categories: <?= json_encode($hourlyLabels) ?>,
+                    },
+                    yaxis: {
+                        labels: {
+                            formatter: function (value) {
+                                if (value >= 1000) return '₹' + (value/1000).toFixed(0) + 'K';
+                                return '₹' + value;
                             }
-                        },
-                        x: { grid: { display: false } }
+                        }
+                    },
+                    grid: {
+                        borderColor: 'rgba(0,0,0,0.05)'
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function (value) {
+                                return '₹' + value;
+                            }
+                        }
                     }
-                }
-            });
-            if (window.storeManagerHourlyChart && window.storeManagerHourlyChart.resize) window.storeManagerHourlyChart.resize();
-        }
+                };
+                window.storeManagerHourlyChart = new ApexCharts(canvas, options);
+                window.storeManagerHourlyChart.render();
+            }
         }
         var raf = window.requestAnimationFrame || function(f){setTimeout(f,16);};
         raf(function(){ raf(draw); });

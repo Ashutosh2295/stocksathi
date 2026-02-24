@@ -115,9 +115,9 @@ function formatCurrency($amount) {
     <link rel="stylesheet" href="<?= BASE_PATH ?>/css/layout.css">
     <link rel="stylesheet" href="<?= BASE_PATH ?>/css/nav-dropdown.css">
     
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="<?= BASE_PATH ?>/js/theme-manager.js"></script>
-    <!-- Chart.js -->
+    <!-- ApexCharts -->
     
 </head>
 
@@ -129,8 +129,8 @@ function formatCurrency($amount) {
             <?php include __DIR__ . '/../../_includes/header.php'; ?>
             
             <main class="content">
-    <!-- Chart.js must be inside main for PJAX -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- ApexCharts must be inside main for PJAX -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
                 <!-- Page Header -->
                 <div class="content-header">
                     <nav class="breadcrumb">
@@ -200,7 +200,7 @@ function formatCurrency($amount) {
                             <h3 class="card-title">📈 Sales Analytics</h3>
                         </div>
                         <div class="card-body">
-                            <canvas id="salesChart" height="300"></canvas>
+                            <div id="salesChart" style="height: 300px;"></div>
                         </div>
                     </div>
 
@@ -210,7 +210,7 @@ function formatCurrency($amount) {
                             <h3 class="card-title">🥧 Stock Distribution</h3>
                         </div>
                         <div class="card-body">
-                            <canvas id="stockChart" height="300"></canvas>
+                            <div id="stockChart" style="height: 300px;"></div>
                         </div>
                     </div>
                 </div>
@@ -259,125 +259,102 @@ function formatCurrency($amount) {
             
 <script>
         function initGeneralDashboardChart() {
-            if (typeof Chart === 'undefined') {
+            if (typeof ApexCharts === 'undefined') {
                 const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+                script.src = 'https://cdn.jsdelivr.net/npm/apexcharts';
                 script.onload = initGeneralDashboardChart;
                 document.head.appendChild(script);
                 return;
             }
             function draw() {
-            if (window.generalSalesChart instanceof Chart) window.generalSalesChart.destroy();
-            if (window.generalStockChart instanceof Chart) window.generalStockChart.destroy();
+                if (window.generalSalesChart) window.generalSalesChart.destroy();
+                if (window.generalStockChart) window.generalStockChart.destroy();
 
-            const salesCtx = document.getElementById('salesChart');
-            if (salesCtx) {
-                window.generalSalesChart = new Chart(salesCtx, {
-                    type: 'line',
-                    data: {
-                        labels: <?= json_encode($salesLabels ?: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul']) ?>,
-                        datasets: [{
-                            label: 'Sales (₹)',
-                            data: <?= json_encode($salesValues ?: [0, 0, 0, 0, 0, 0, 0]) ?>,
-                        borderColor: '#1565C0', /* var(--color-primary) */
-                        backgroundColor: 'rgba(66, 165, 245, 0.1)', /* var(--color-primary-light) alpha */
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4,
-                            pointBackgroundColor: '#1565C0',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 5,
-                            pointHoverRadius: 7
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top',
-                                labels: { font: { size: 12, weight: '600' } }
-                            },
-                            tooltip: {
-                                backgroundColor: 'rgba(0,0,0,0.8)',
-                                padding: 12,
-                                callbacks: {
-                                    label: function(context) {
-                                        let value = context.parsed.y;
-                                        if (value >= 100000) return '₹' + (value/100000).toFixed(2) + 'L';
-                                        if (value >= 1000) return '₹' + (value/1000).toFixed(2) + 'K';
-                                        return '₹' + value.toFixed(2);
-                                    }
+                const salesElement = document.getElementById('salesChart');
+                if (salesElement) {
+                    var salesOptions = {
+                        series: [{
+                            name: 'Sales (₹)',
+                            data: <?= json_encode($salesValues ?: [0, 0, 0, 0, 0, 0, 0]) ?>
+                        }],
+                        chart: {
+                            type: 'area',
+                            height: 300,
+                            toolbar: { show: false }
+                        },
+                        colors: ['#1565C0'],
+                        fill: {
+                            type: 'gradient',
+                            gradient: {
+                                shadeIntensity: 1,
+                                opacityFrom: 0.4,
+                                opacityTo: 0.05,
+                                stops: [0, 100]
+                            }
+                        },
+                        dataLabels: { enabled: false },
+                        stroke: { curve: 'smooth', width: 3 },
+                        xaxis: {
+                            categories: <?= json_encode($salesLabels ?: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul']) ?>,
+                        },
+                        yaxis: {
+                            labels: {
+                                formatter: function (value) {
+                                    if (value >= 100000) return '₹' + (value/100000).toFixed(1) + 'L';
+                                    if (value >= 1000) return '₹' + (value/1000).toFixed(1) + 'K';
+                                    return '₹' + value;
                                 }
                             }
                         },
-                        scales: {
+                        tooltip: {
                             y: {
-                                beginAtZero: true,
-                                grid: { color: 'rgba(0,0,0,0.05)' },
-                                ticks: {
-                                    callback: function(value) {
-                                        if (value >= 100000) return '₹' + (value/100000).toFixed(1) + 'L';
-                                        if (value >= 1000) return '₹' + (value/1000).toFixed(1) + 'K';
-                                        return '₹' + value;
-                                    }
+                                formatter: function (value) {
+                                    if (value >= 100000) return '₹' + (value/100000).toFixed(2) + 'L';
+                                    if (value >= 1000) return '₹' + (value/1000).toFixed(2) + 'K';
+                                    return '₹' + value.toFixed(2);
                                 }
-                            },
-                            x: { grid: { display: false } }
-                        }
-                    }
-                });
-                if (window.generalSalesChart && window.generalSalesChart.resize) window.generalSalesChart.resize();
-            }
-
-            // Stock Distribution Chart
-            const stockCtx = document.getElementById('stockChart');
-            if (stockCtx) {
-                window.generalStockChart = new Chart(stockCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['In Stock', 'Low Stock', 'Out of Stock'],
-                        datasets: [{
-                            data: [
-                                <?= $stockDistribution['in_stock'] ?? 0 ?>,
-                                <?= $stockDistribution['low_stock'] ?? 0 ?>,
-                                <?= $stockDistribution['out_of_stock'] ?? 0 ?>
-                            ],
-                            backgroundColor: [
-                                'rgb(16, 185, 129)',  // Success green
-                                'rgb(251, 191, 36)',   // Warning yellow
-                                'rgb(239, 68, 68)'     // Danger red
-                            ],
-                            borderWidth: 0,
-                            hoverBorderWidth: 2,
-                            hoverBorderColor: '#fff'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'bottom',
-                                labels: { 
-                                    padding: 15, 
-                                    usePointStyle: true,
-                                    font: { size: 12 }
-                                }
-                            },
-                            tooltip: {
-                                backgroundColor: 'rgba(0,0,0,0.8)',
-                                padding: 12
                             }
                         },
-                        cutout: '65%'
-                    }
-                });
-                if (window.generalStockChart && window.generalStockChart.resize) window.generalStockChart.resize();
-            }
+                        grid: {
+                            borderColor: 'rgba(0,0,0,0.05)',
+                        }
+                    };
+                    
+                    window.generalSalesChart = new ApexCharts(salesElement, salesOptions);
+                    window.generalSalesChart.render();
+                }
+
+                // Stock Distribution Chart
+                const stockElement = document.getElementById('stockChart');
+                if (stockElement) {
+                    var stockOptions = {
+                        series: [
+                            <?= $stockDistribution['in_stock'] ?? 0 ?>,
+                            <?= $stockDistribution['low_stock'] ?? 0 ?>,
+                            <?= $stockDistribution['out_of_stock'] ?? 0 ?>
+                        ],
+                        labels: ['In Stock', 'Low Stock', 'Out of Stock'],
+                        chart: {
+                            type: 'donut',
+                            height: 300
+                        },
+                        colors: ['#10b981', '#fbbf24', '#ef4444'],
+                        plotOptions: {
+                            pie: {
+                                donut: {
+                                    size: '65%'
+                                }
+                            }
+                        },
+                        dataLabels: { enabled: false },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    };
+
+                    window.generalStockChart = new ApexCharts(stockElement, stockOptions);
+                    window.generalStockChart.render();
+                }
             }
             var raf = window.requestAnimationFrame || function(f){setTimeout(f,16);};
             raf(function(){ raf(draw); });

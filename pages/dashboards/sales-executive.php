@@ -133,15 +133,19 @@ try {
 $commissionEarned = $commissionPercent > 0 ? ($myMonthlySales['total'] * $commissionPercent / 100) : 0;
 
 try {
-    $dailyTrend = $db->query("SELECT DATE(invoice_date) as dt, COALESCE(SUM(total_amount),0) as total FROM invoices WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND created_by = ?" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . " GROUP BY DATE(invoice_date) ORDER BY dt", [$userId]);
+    $dailyTrend = $db->query("SELECT DATE(invoice_date) as dt, COALESCE(SUM(total_amount),0) as total FROM invoices WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND created_by = ?" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : "") . " GROUP BY DATE(invoice_date) ORDER BY dt", [$userId]);
 } catch (Exception $e) { $dailyTrend = []; }
-for ($i = 6; $i >= 0; $i--) {
+
+$trendLabels = [];
+$trendValues = [];
+for ($i = 29; $i >= 0; $i--) {
     $d = date('Y-m-d', strtotime("-$i days"));
-    $trendLabels[$i] = date('D', strtotime($d));
-    $trendValues[$i] = 0;
+    $trendLabels[] = date('d M', strtotime($d));
+    $val = 0;
     foreach ($dailyTrend as $r) {
-        if (isset($r['dt']) && $r['dt'] == $d) { $trendValues[$i] = (float)$r['total']; break; }
+        if (isset($r['dt']) && $r['dt'] == $d) { $val = (float)$r['total']; break; }
     }
+    $trendValues[] = $val;
 }
 
 try {
@@ -246,7 +250,7 @@ function getTimeGreeting() {
     <link rel="stylesheet" href="<?= CSS_PATH ?>/components.css">
     <link rel="stylesheet" href="<?= CSS_PATH ?>/layout.css">
     <link rel="stylesheet" href="<?= CSS_PATH ?>/nav-dropdown.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="<?= BASE_PATH ?>/js/theme-manager.js"></script>
 </head>
 <body>
@@ -257,8 +261,8 @@ function getTimeGreeting() {
             <?php include __DIR__ . '/../../_includes/header.php'; ?>
             
             <main class="content">
-    <!-- Chart.js must be inside main for PJAX -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- ApexCharts must be inside main for PJAX -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <style>
         .sales-header {
             background: linear-gradient(135deg, #3a63a5 0%, #4f82d5 50%, #4f82d5 100%);
@@ -317,18 +321,21 @@ function getTimeGreeting() {
         }
         
         .new-sale-btn {
-            background: linear-gradient(135deg, #3a63a5, #4f82d5);
-            color: white; border: none; padding: 16px 32px; border-radius: 8px;
-            font-size: 18px; font-weight: 600; cursor: pointer;
-            display: flex; align-items: center; gap: 10px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            text-decoration: none;
-            box-shadow: 0 4px 12px rgba(79, 130, 213, 0.25);
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff !important; 
+            border: none; padding: 16px 32px; border-radius: 12px;
+            font-size: 18px; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; gap: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none !important;
+            box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+            letter-spacing: 0.5px;
         }
         .new-sale-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(79, 130, 213, 0.35);
-            background: linear-gradient(135deg, #1E3A5F, #3A5F8F);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 30px -5px rgba(16, 185, 129, 0.5);
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: #ffffff !important;
         }
         
         .product-search {
@@ -462,7 +469,7 @@ function getTimeGreeting() {
                         <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
                             <a href="<?= BASE_PATH ?>/pages/invoice-form.php" class="new-sale-btn" style="display: inline-flex;">➕ Create your first sale</a>
                             <?php if (in_array(Session::getUserRole(), ['super_admin', 'admin'])): ?>
-                            <a href="<?= BASE_PATH ?>/pages/dashboards/sales-executive.php?seed=1" class="btn" style="display: inline-flex; background: #0ea5e9; color: white; padding: 12px 20px; border-radius: 8px; text-decoration: none;">🔧 Insert test invoice</a>
+                            <a href="<?= BASE_PATH ?>/pages/dashboards/sales-executive.php?seed=1" class="btn" style="display: inline-flex; background: #0ea5e9; color: #ffffff !important; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: 700; box-shadow: 0 10px 20px -5px rgba(14, 165, 233, 0.4); transition: all 0.3s ease;">🔧 Insert test invoice</a>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -633,7 +640,7 @@ function getTimeGreeting() {
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
-                                <canvas id="trendChart"></canvas>
+                                <div id="trendChart" style="height: 100%;"></div>
                             </div>
                             <div style="display: flex; justify-content: space-between; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-light);">
                                 <div>
@@ -816,51 +823,80 @@ function initSalesChart() {
         });
 
         function drawChart() {
-        if (window.salesExecutiveChart instanceof Chart) window.salesExecutiveChart.destroy();
-        const trendEl = document.getElementById('trendChart');
-        if (trendEl) {
-            window.salesExecutiveChart = new Chart(trendEl, {
-                type: 'bar',
-                data: {
-                    labels: <?= json_encode($trendLabels) ?>,
-                    datasets: [{
-                        label: 'Sales (₹)',
-                        data: <?= json_encode($trendValues) ?>,
-                        backgroundColor: 'rgba(79, 130, 213, 0.5)',
-                        borderColor: 'rgb(79, 130, 213)',
-                        borderWidth: 1,
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(0,0,0,0.05)' },
-                            ticks: {
-                                callback: value => {
+            if (window.salesExecutiveChart) window.salesExecutiveChart.destroy();
+            const trendEl = document.getElementById('trendChart');
+            if (trendEl) {
+                const trendData = <?= json_encode($trendValues) ?>;
+                const hasData = trendData.some(v => v > 0);
+                
+                if (hasData) {
+                    var options = {
+                        series: [{
+                            name: 'Sales (₹)',
+                            data: trendData
+                        }],
+                        chart: {
+                            type: 'bar',
+                            height: 200,
+                            toolbar: { show: false }
+                        },
+                        colors: ['rgba(79, 130, 213, 0.7)'],
+                        plotOptions: {
+                            bar: {
+                                borderRadius: 6,
+                                horizontal: false,
+                            }
+                        },
+                        dataLabels: { enabled: false },
+                        stroke: {
+                            show: true,
+                            width: 1,
+                            colors: ['rgb(79, 130, 213)']
+                        },
+                        xaxis: {
+                            categories: <?= json_encode($trendLabels) ?>,
+                            labels: {
+                                hideOverlappingLabels: true,
+                                rotate: -45,
+                                style: {
+                                    fontSize: '10px'
+                                }
+                            },
+                            tickAmount: 10
+                        },
+                        yaxis: {
+                            labels: {
+                                formatter: function (value) {
                                     if (value >= 1000) return '₹' + (value/1000).toFixed(0) + 'K';
                                     return '₹' + value;
                                 }
                             }
                         },
-                        x: { grid: { display: false } }
-                    }
+                        grid: {
+                            borderColor: 'rgba(0,0,0,0.05)'
+                        },
+                        tooltip: {
+                            y: {
+                                formatter: function (value) {
+                                    return '₹' + value;
+                                }
+                            }
+                        }
+                    };
+                    window.salesExecutiveChart = new ApexCharts(trendEl, options);
+                    window.salesExecutiveChart.render();
+                } else {
+                    trendEl.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary);"><p>No sales data available for the last 30 days</p></div>';
                 }
-            });
-            if (window.salesExecutiveChart && window.salesExecutiveChart.resize) window.salesExecutiveChart.resize();
-        }
+            }
         }
         var raf = window.requestAnimationFrame || function(f){setTimeout(f,16);};
         raf(function(){ raf(drawChart); });
     }
 
-        if (typeof Chart === 'undefined') {
+        if (typeof ApexCharts === 'undefined') {
             const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+            script.src = 'https://cdn.jsdelivr.net/npm/apexcharts';
             script.onload = initSalesChart;
             document.head.appendChild(script);
         } else {

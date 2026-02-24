@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
         /* Sidebar Dropdown Styles */
         .nav-dropdown-toggle {
@@ -433,7 +433,7 @@
                             <h3 class="card-title">Sales Overview</h3>
                         </div>
                         <div class="card-body">
-                            <canvas id="salesChart" height="250"></canvas>
+                            <div id="salesChart" style="height: 100%;"></div>
                         </div>
                     </div>
 
@@ -442,7 +442,7 @@
                             <h3 class="card-title">Stock Distribution</h3>
                         </div>
                         <div class="card-body">
-                            <canvas id="stockChart" height="250"></canvas>
+                            <div id="stockChart" style="height: 100%;"></div>
                         </div>
                     </div>
                 </div>
@@ -612,67 +612,54 @@
 
 
         // Sales Chart
-        const salesCtx = document.getElementById('salesChart').getContext('2d');
-        new Chart(salesCtx, {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                datasets: [{
-                    label: 'Sales',
-                    data: [12000, 19000, 15000, 25000, 22000, 30000],
-                    borderColor: '#0d9488',
-                    backgroundColor: 'rgba(13, 148, 136, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
+        var salesOptions = {
+            series: [{
+                name: 'Sales',
+                data: [12000, 19000, 15000, 25000, 22000, 30000]
+            }],
+            chart: {
+                type: 'area',
+                height: 250,
+                toolbar: { show: false }
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '$' + value.toLocaleString();
-                            }
-                        }
+            colors: ['#0d9488'],
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.4,
+                    opacityTo: 0.05,
+                    stops: [0, 100]
+                }
+            },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 2 },
+            xaxis: {
+                categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
+            },
+            yaxis: {
+                labels: {
+                    formatter: function (value) {
+                        return '$' + value.toLocaleString();
                     }
                 }
             }
-        });
+        };
+        new ApexCharts(document.querySelector("#salesChart"), salesOptions).render();
 
         // Stock Chart
-        const stockCtx = document.getElementById('stockChart').getContext('2d');
-        new Chart(stockCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['In Stock', 'Low Stock', 'Out of Stock'],
-                datasets: [{
-                    data: [65, 25, 10],
-                    backgroundColor: [
-                        '#10b981',
-                        '#f59e0b',
-                        '#ef4444'
-                    ],
-                    borderWidth: 0
-                }]
+        var stockOptions = {
+            series: [65, 25, 10],
+            chart: {
+                type: 'donut',
+                height: 250
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }
-        });
+            labels: ['In Stock', 'Low Stock', 'Out of Stock'],
+            colors: ['#10b981', '#f59e0b', '#ef4444'],
+            dataLabels: { enabled: false },
+            legend: { position: 'bottom' }
+        };
+        new ApexCharts(document.querySelector("#stockChart"), stockOptions).render();
     </script>
 </body>
 </html>
