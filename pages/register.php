@@ -12,6 +12,7 @@ require_once __DIR__ . '/../_includes/database.php';
 require_once __DIR__ . '/../_includes/AuthHelper.php';
 require_once __DIR__ . '/../_includes/Session.php';
 require_once __DIR__ . '/../_includes/Validator.php';
+require_once __DIR__ . '/../_includes/RBACSeeder.php';
 
 $error = '';
 $success = '';
@@ -82,7 +83,13 @@ $orgWhere = $orgIdPatch ? " WHERE organization_id = " . intval($orgIdPatch) . " 
                 // Commit transaction
                 $conn->commit();
                 
-                $success = '🎉 Registration successful! Your organization has been created. Please login to continue.';
+                // Create roles & permissions for this org only (no shared/demo data)
+                RBACSeeder::seedForOrganization($organizationId);
+                
+                // Log registration activity
+                Database::logActivity('register', 'auth', "New organization created: $org_name");
+                
+                $success = '🎉 Registration successful! Your organization "' . htmlspecialchars($org_name) . '" has been created. <br><br><b>Note:</b> You are now the <b>Super Admin</b> with full access to the <b>Roles & Permissions</b> module. Please login to get started.';
                 
                 // Clear form data on success
                 $org_name = $org_email = $org_phone = $org_address = $org_gst = '';

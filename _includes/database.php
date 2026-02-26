@@ -157,4 +157,28 @@ class Database {
     public function rollback() {
         return $this->conn->rollBack();
     }
+    /**
+     * Log an activity to the activity_logs table
+     */
+    public static function logActivity($action, $module, $description = '', $status = 'success') {
+        try {
+            $db = self::getInstance();
+            if (session_status() === PHP_SESSION_NONE) {
+                @session_start();
+            }
+            
+            $userId = $_SESSION['user_id'] ?? null;
+            $orgId = $_SESSION['organization_id'] ?? null;
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+            
+            $sql = "INSERT INTO activity_logs (organization_id, user_id, action, module, description, ip_address, status, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+            
+            $db->execute($sql, [$orgId, $userId, $action, $module, $description, $ip, $status]);
+            return true;
+        } catch (Exception $e) {
+            error_log("Failed to log activity: " . $e->getMessage());
+            return false;
+        }
+    }
 }

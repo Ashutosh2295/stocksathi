@@ -622,6 +622,14 @@ function timeAgo($datetime) {
                                 <span class="quick-action-icon">📊</span>
                                 <span>View Reports</span>
                             </a>
+                            <a href="<?= BASE_PATH ?>/pages/users.php" class="quick-action-btn">
+                                <span class="quick-action-icon">👥</span>
+                                <span>Manage Users</span>
+                            </a>
+                            <a href="<?= BASE_PATH ?>/pages/roles.php" class="quick-action-btn">
+                                <span class="quick-action-icon">🔐</span>
+                                <span>Roles & Permissions</span>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -880,7 +888,11 @@ function initAdminPage() {
                             hideOverlappingLabels: true,
                             rotate: -45,
                             rotateAlways: false,
-                            style: { fontSize: '10px' }
+                            trim: true,
+                            style: { 
+                                fontSize: '10px',
+                                fontFamily: 'inherit'
+                            }
                         },
                         tickAmount: <?= $chartRange === '30days' ? 10 : ($chartRange === '12months' ? 12 : ($chartRange === 'all' ? 12 : 'undefined')) ?>
                     },

@@ -47,13 +47,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if (!empty($_POST['id'])) {
                 // Update existing product (no expiry_date - column not in schema)
-                $query = "UPDATE products SET name = ?, description = ?, sku = ?, barcode = ?, 
-                         purchase_price = ?, selling_price = ?, stock_quantity = ?, min_stock_level = ?, 
-                         tax_rate = ?, unit = ?, status = ? 
+                $query = "UPDATE products SET name = ?, description = ?, category_id = ?, brand_id = ?, 
+                         sku = ?, barcode = ?, purchase_price = ?, selling_price = ?, 
+                         stock_quantity = ?, min_stock_level = ?, tax_rate = ?, unit = ?, status = ? 
                          WHERE {$orgFilter} id = ?";
                 $affected = $db->execute($query, [
                     $data['name'],
                     $data['description'] ?? null,
+                    $data['category_id'],
+                    $data['brand_id'],
                     $data['sku'],
                     $data['barcode'],
                     $data['purchase_price'],
@@ -67,6 +69,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
                 
                 if ($affected > 0) {
+                    // Log product update
+                    Database::logActivity('update', 'products', "Updated product: " . $data['name']);
+
                     Session::setFlash('Product updated successfully', 'success');
                     header('Location: ' . BASE_PATH . '/pages/products.php');
                     exit;
@@ -75,7 +80,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $messageType = 'error';
                 }
             } else {
-                // Create new product (no expiry_date - column not in schema)
                 $query = "INSERT INTO products (name, description, category_id, brand_id, unit, sku, barcode, 
                          purchase_price, selling_price, stock_quantity, min_stock_level, tax_rate, status, organization_id) 
                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -95,7 +99,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $data['status'] ?? 'active',
                     $orgIdPatch
                 ]);
-                
+
+                if ($id) {
+                    // Log product creation
+                    Database::logActivity('create', 'products', "Created new product: " . $data['name']);
+                }
+
                 Session::setFlash('Product created successfully', 'success');
                 header('Location: ' . BASE_PATH . '/pages/products.php');
                 exit;

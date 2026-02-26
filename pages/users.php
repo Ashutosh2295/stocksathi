@@ -288,11 +288,19 @@ try {
 
 // Ensure HR role appears in dropdown even if not seeded yet
 $hasHr = false;
-foreach ($roles as $r) {
-    if (($r['name'] ?? '') === 'hr') { $hasHr = true; break; }
+foreach ($roles as &$r) {
+    if (($r['name'] ?? '') === 'hr') { $hasHr = true; }
+    
+    // Fetch permissions for each role
+    $r['permissions'] = $db->query("
+        SELECT p.name 
+        FROM role_permissions rp
+        INNER JOIN permissions p ON rp.permission_id = p.id
+        INNER JOIN roles r2 ON rp.role_id = r2.id
+        WHERE r2.name = ?", [$r['name']]);
 }
 if (!$hasHr) {
-    $roles[] = ['name' => 'hr'];
+    $roles[] = ['name' => 'hr', 'permissions' => []];
 }
 ?>
 <!DOCTYPE html>
@@ -377,7 +385,10 @@ if (!$hasHr) {
                                                     <span class="badge badge-secondary">Inactive</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td class="table-actions">
+                                             <td class="table-actions">
+                                                <button class="btn btn-ghost btn-sm" title="View Permissions" onclick="showUserPermissions(<?= htmlspecialchars(json_encode($user)) ?>)">
+                                                    🔑
+                                                </button>
                                                 <a href="?edit_id=<?= $user['id'] ?>" class="btn btn-ghost btn-sm" title="Edit" onclick="event.preventDefault(); editUser(<?= htmlspecialchars(json_encode($user)) ?>);">
                                                     ✏️
                                                 </a>
@@ -426,12 +437,18 @@ if (!$hasHr) {
                     </div>
                     <div class="form-group">
                         <label class="form-label required">Role</label>
-                        <select name="role" id="userRole" class="form-control" required onchange="toggleDailyTarget()">
+                        <select name="role" id="userRole" class="form-control" required onchange="onRoleChange()">
                             <option value="">Select Role</option>
                             <?php foreach ($roles as $role): ?>
                                 <option value="<?= htmlspecialchars($role['name']) ?>"><?= ucfirst(str_replace('_', ' ', $role['name'])) ?></option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+                    <div id="rolePermissionsPreview" style="margin-top: -10px; margin-bottom: 20px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; display: none;">
+                        <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Role Permissions Preview</div>
+                        <div id="rolePermissionsList" style="display: flex; flex-wrap: wrap; gap: 4px;">
+                            <!-- Filled by JS -->
+                        </div>
                     </div>
                     <div class="form-group" id="dailyTargetGroup" style="display:none;">
                         <label class="form-label">Daily Sales Target (₹)</label>
@@ -454,6 +471,24 @@ if (!$hasHr) {
         </div>
     </div>
 
+    <!-- Permissions View Modal -->
+    <div class="modal-backdrop" id="permissionsModal" style="display:none;">
+        <div class="modal" style="max-width:500px;">
+            <div class="modal-header">
+                <h3 class="modal-title">User Permissions</h3>
+                <button class="modal-close" onclick="closeModal('permissionsModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="userPermissionsContent">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="closeModal('permissionsModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Minimal JavaScript for Modal Only -->
     <script>
         function openModal(modalId, isNew = false) {
@@ -469,7 +504,7 @@ if (!$hasHr) {
                     document.getElementById('passwordLabel').textContent = 'Password';
                     document.getElementById('userPassword').required = true;
                     document.getElementById('passwordHint').style.display = 'none';
-                    toggleDailyTarget();
+                    onRoleChange();
                 }
             }
         }
@@ -492,6 +527,57 @@ if (!$hasHr) {
             if (group) group.style.display = (role === 'sales_executive' || role === 'store_manager') ? 'block' : 'none';
         }
 
+        const rolesData = <?= json_encode($roles) ?>;
+
+        function onRoleChange() {
+            toggleDailyTarget();
+            
+            const roleName = document.getElementById('userRole').value;
+            const preview = document.getElementById('rolePermissionsPreview');
+            const list = document.getElementById('rolePermissionsList');
+            
+            if (!roleName) {
+                preview.style.display = 'none';
+                return;
+            }
+            
+            const role = rolesData.find(r => r.name === roleName);
+            if (role && role.permissions && role.permissions.length > 0) {
+                preview.style.display = 'block';
+                list.innerHTML = role.permissions.map(p => 
+                    `<span style="font-size: 10px; padding: 2px 6px; background: #e0e7ff; color: #4338ca; border-radius: 4px; border: 1px solid #c7d2fe;">${p.name.replace(/_/g, ' ')}</span>`
+                ).join('');
+            } else if (roleName === 'super_admin') {
+                preview.style.display = 'block';
+                list.innerHTML = `<span style="font-size: 10px; padding: 2px 6px; background: #fef2f2; color: #991b1b; border-radius: 4px; border: 1px solid #fecaca; font-weight: 600;">ALL PERMISSIONS (Full Access)</span>`;
+            } else {
+                preview.style.display = 'block';
+                list.innerHTML = `<span style="font-size: 11px; color: #64748b;">No specific permissions found</span>`;
+            }
+        }
+
+        function showUserPermissions(user) {
+            const content = document.getElementById('userPermissionsContent');
+            const role = rolesData.find(r => r.name === user.role);
+            
+            let html = `<div style="margin-bottom: 15px;"><strong>User:</strong> ${user.full_name} <br> <strong>Role:</strong> ${user.role}</div>`;
+            
+            if (user.role === 'super_admin') {
+                html += `<div style="padding: 12px; background: #fef2f2; color: #991b1b; border-radius: 6px; border: 1px solid #fecaca; font-weight: 600; text-align: center;">ALL PERMISSIONS (Full Access)</div>`;
+            } else if (role && role.permissions && role.permissions.length > 0) {
+                html += `<div style="display: flex; flex-wrap: wrap; gap: 6px;">`;
+                html += role.permissions.map(p => 
+                    `<span style="font-size: 11px; padding: 4px 8px; background: #e0e7ff; color: #4338ca; border-radius: 4px; border: 1px solid #c7d2fe;">${p.name.replace(/_/g, ' ')}</span>`
+                ).join('');
+                html += `</div>`;
+            } else {
+                html += `<div style="color: #64748b; font-style: italic;">No permissions found for this role.</div>`;
+            }
+            
+            content.innerHTML = html;
+            openModal('permissionsModal');
+        }
+
         function editUser(user) {
             document.getElementById('formAction').value = 'update';
             document.getElementById('userId').value = user.id;
@@ -505,7 +591,7 @@ if (!$hasHr) {
             document.getElementById('passwordLabel').textContent = 'Password (Leave blank to keep existing)';
             document.getElementById('userPassword').required = false;
             document.getElementById('passwordHint').style.display = 'block';
-            toggleDailyTarget();
+            onRoleChange();
             openModal('userModal');
         }
 

@@ -49,6 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     // Soft delete - mark as inactive instead
                     $affected = $db->execute("UPDATE products SET status = 'inactive' WHERE {$orgFilter} id = ?", [$id]);
                     if ($affected > 0) {
+                        // Log product deactivation
+                        Database::logActivity('deactivate', 'products', "Product ID $id marked as inactive due to existing history");
                         Session::setFlash('Product marked as inactive (has stock history). Cannot permanently delete.', 'success');
                     } else {
                         Session::setFlash('Product not found', 'error');
@@ -57,6 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     // Hard delete if no history
                     $affected = $db->execute("DELETE FROM products WHERE {$orgFilter} id = ?", [$id]);
                     if ($affected > 0) {
+                        // Log product deletion
+                        Database::logActivity('delete', 'products', "Product ID $id permanently deleted");
                         Session::setFlash('Product deleted successfully', 'success');
                     } else {
                         Session::setFlash('Product not found', 'error');

@@ -9,7 +9,32 @@ $orgIdPatch = isset($_SESSION['organization_id']) ? $_SESSION['organization_id']
 $orgFilter = $orgIdPatch ? " organization_id = " . intval($orgIdPatch) . " AND " : "";
 $orgWhere = $orgIdPatch ? " WHERE organization_id = " . intval($orgIdPatch) . " " : "";
 
-// Fetch roles with user counts
+// Core application roles (shown first; others are from migrations/imports)
+$coreRoleNames = ['super_admin', 'admin', 'store_manager', 'sales_executive', 'accountant', 'warehouse_manager'];
+
+// Prefer org-specific roles so new registrations don't see shared/demo data
+$rolesFilter = "1=1";
+$rolesQueryParams = [$orgId]; // for JOIN u.organization_id = ?
+try {
+    $hasOrgRoles = $db->queryOne("SELECT 1 FROM roles WHERE organization_id = ? LIMIT 1", [$orgId]);
+    if (!$hasOrgRoles && $orgId) {
+        // Existing org (e.g. registered before org-scoped roles) — create their roles once
+        $orgHasUsers = $db->queryOne("SELECT 1 FROM users WHERE organization_id = ? LIMIT 1", [$orgId]);
+        if ($orgHasUsers) {
+            require_once __DIR__ . '/../_includes/RBACSeeder.php';
+            RBACSeeder::seedForOrganization($orgId);
+            $hasOrgRoles = $db->queryOne("SELECT 1 FROM roles WHERE organization_id = ? LIMIT 1", [$orgId]);
+        }
+    }
+    if ($hasOrgRoles) {
+        $rolesFilter = "r.organization_id = ?";
+        $rolesQueryParams = [$orgId, $orgId]; // JOIN, then WHERE
+    }
+} catch (Exception $e) {
+    // roles table may not have organization_id yet; show all roles (1=1)
+}
+
+// Fetch roles with user counts (include display_name if column exists)
 try {
     $roles = $db->query("
         SELECT 
@@ -20,10 +45,32 @@ try {
             COUNT(DISTINCT u.id) as user_count
         FROM roles r
         LEFT JOIN users u ON u.role = r.name AND u.organization_id = ?
+        WHERE " . $rolesFilter . "
         GROUP BY r.id, r.name, r.description, r.created_at
         ORDER BY r.name ASC
-    ", [$orgId]);
-    
+    ", $rolesQueryParams);
+    // Add display_name safely (column may not exist in older schemas)
+    foreach ($roles as &$r) {
+        $r['display_name'] = null;
+    }
+    unset($r);
+    try {
+        $hasDisplayName = $db->queryOne("SHOW COLUMNS FROM roles LIKE 'display_name'");
+        if ($hasDisplayName) {
+            $withDisplay = $db->query("SELECT id, COALESCE(display_name, name) as display_name FROM roles");
+            foreach ($withDisplay as $row) {
+                foreach ($roles as &$r) {
+                    if ((int)$r['id'] === (int)$row['id']) {
+                        $r['display_name'] = $row['display_name'];
+                        break;
+                    }
+                }
+            }
+            unset($r);
+        }
+    } catch (Exception $e) {
+        // ignore
+    }
     // Get permissions for each role
     foreach ($roles as &$role) {
         $permissions = $db->query("
@@ -35,8 +82,18 @@ try {
         
         $role['permissions'] = $permissions;
         $role['permission_count'] = count($permissions);
+        $role['is_core'] = in_array($role['name'], $coreRoleNames, true);
     }
-    
+    unset($role);
+    // Sort: core roles first, then by name
+    usort($roles, function ($a, $b) use ($coreRoleNames) {
+        $aCore = in_array($a['name'], $coreRoleNames, true);
+        $bCore = in_array($b['name'], $coreRoleNames, true);
+        if ($aCore !== $bCore) {
+            return $aCore ? -1 : 1;
+        }
+        return strcasecmp($a['name'], $b['name']);
+    });
 } catch (Exception $e) {
     error_log("Error loading roles: " . $e->getMessage());
     $roles = [];
@@ -126,10 +183,16 @@ try {
                                         </td>
                                     </tr>
                                 <?php else: ?>
-                                    <?php foreach ($roles as $role): ?>
+                                    <?php foreach ($roles as $role): 
+                                        $label = !empty($role['display_name']) ? $role['display_name'] : $role['name'];
+                                    ?>
                                         <tr>
                                             <td>
-                                                <strong><?= htmlspecialchars($role['name']) ?></strong>
+                                                <strong><?= htmlspecialchars($label) ?></strong>
+                                                <?php if (!empty($role['is_core'])): ?>
+                                                    <span class="badge badge-primary" style="margin-left: 6px; font-size: 10px;">Core</span>
+                                                <?php endif; ?>
+                                                <div style="font-size: 11px; color: var(--text-secondary); font-weight: normal;"><?= htmlspecialchars($role['name']) ?></div>
                                             </td>
                                             <td><?= htmlspecialchars($role['description'] ?? '-') ?></td>
                                             <td>

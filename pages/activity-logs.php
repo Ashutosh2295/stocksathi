@@ -174,7 +174,11 @@ $users = $db->query("SELECT id, full_name FROM users WHERE full_name IS NOT NULL
                                             <td><?= htmlspecialchars($activity['module'] ?? '-') ?></td>
                                             <td><?= htmlspecialchars($activity['description'] ?? '-') ?></td>
                                             <td><?= htmlspecialchars($activity['ip_address'] ?? '-') ?></td>
-                                            <td><span class="badge badge-success">Success</span></td>
+                                            <td>
+                                                <span class="badge badge-<?= ($activity['status'] ?? 'success') === 'success' ? 'success' : 'danger' ?>">
+                                                    <?= ucfirst($activity['status'] ?? 'success') ?>
+                                                </span>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>

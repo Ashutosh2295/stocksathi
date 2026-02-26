@@ -26,6 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
             
             if ($result['success']) {
+                // Log login activity
+                Database::logActivity('login', 'auth', 'User logged in');
+
                 // Get user role for redirection
                 $userRole = $result['user']['role'] ?? 'user';
                 

@@ -9,8 +9,8 @@
 
 .app-container {
     display: flex;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
+    background: var(--bg-body);
 }
 
 /* ============================================
@@ -23,12 +23,13 @@
     border-right: 1px solid var(--border-light);
     display: flex;
     flex-direction: column;
-    position: fixed;
+    position: sticky;
     left: 0;
     top: 0;
-    bottom: 0;
+    height: 100vh;
     z-index: var(--z-fixed);
-    transition: transform var(--transition-base);
+    transition: transform var(--transition-base), width var(--transition-base);
+    flex-shrink: 0;
 }
 
 .sidebar.collapsed {
@@ -229,11 +230,11 @@
    ============================================ */
 
 .main-content {
-    margin-left: var(--sidebar-width);
     flex: 1;
     display: flex;
     flex-direction: column;
-    width: calc(100% - var(--sidebar-width));
+    min-width: 0;
+    /* Prevent flex overflow */
     transition: margin-left var(--transition-base), width var(--transition-base);
 }
 
