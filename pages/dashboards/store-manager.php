@@ -8,7 +8,7 @@ require_once __DIR__ . '/../../_includes/session_guard.php';
 require_once __DIR__ . '/../../_includes/config.php';
 
 // Require store manager or higher role
-$allowedRoles = ['super_admin', 'admin', 'store_manager'];
+$allowedRoles = ['super_admin', 'admin', 'store_manager', 'warehouse_manager', 'purchase_manager'];
 if (!in_array(Session::getUserRole(), $allowedRoles)) {
     header('Location: ' . BASE_PATH . '/403.php');
     exit;

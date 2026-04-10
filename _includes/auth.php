@@ -16,7 +16,7 @@ define('LOGIN_LOCKOUT_TIME', 900); // 15 minutes
 
 // User roles
 define('ROLE_SUPER_ADMIN', 'super_admin');
-define('ROLE_ADMIN', 'admin');
+define('ROLE_ADMIN', 'admin');  
 define('ROLE_MANAGER', 'manager');
 define('ROLE_USER', 'user');
 

@@ -346,28 +346,28 @@ $showAdminSection = canSee(['view_users', 'view_settings', 'view_activity_logs',
                     <span class="nav-item-text">HR Dashboard</span>
                 </a>
 
-                <?php if (canSee('view_employees')): ?>
+                <?php if (canSee('view_employees') || $userRole === 'hr'): ?>
                 <a href="<?= BASE_PATH ?>/pages/employees.php" class="nav-item nav-sub-item <?= $currentPage == 'employees.php' ? 'active' : '' ?>">
                     <span class="nav-item-icon"><?php include __DIR__ . '/../assets/icons/hr/employees.svg'; ?></span>
                     <span class="nav-item-text">Employees</span>
                 </a>
                 <?php endif; ?>
                 
-                <?php if (canSee(['view_employees'])): // Using employees permission as proxy for departments ?>
+                <?php if (canSee(['view_employees']) || $userRole === 'hr'): // Using employees permission as proxy for departments ?>
                 <a href="<?= BASE_PATH ?>/pages/departments.php" class="nav-item nav-sub-item <?= $currentPage == 'departments.php' ? 'active' : '' ?>">
                     <span class="nav-item-icon"><?php include __DIR__ . '/../assets/icons/hr/departments.svg'; ?></span>
                     <span class="nav-item-text">Departments</span>
                 </a>
                 <?php endif; ?>
                 
-                <?php if (canSee('view_attendance')): ?>
+                <?php if (canSee('view_attendance') || $userRole === 'hr'): ?>
                 <a href="<?= BASE_PATH ?>/pages/attendance.php" class="nav-item nav-sub-item <?= $currentPage == 'attendance.php' ? 'active' : '' ?>">
                     <span class="nav-item-icon"><?php include __DIR__ . '/../assets/icons/hr/attendance.svg'; ?></span>
                     <span class="nav-item-text">Attendance</span>
                 </a>
                 <?php endif; ?>
                 
-                <?php if (canSee('view_leave')): ?>
+                <?php if (canSee('view_leave') || $userRole === 'hr'): ?>
                 <a href="<?= BASE_PATH ?>/pages/leave-management.php" class="nav-item nav-sub-item <?= $currentPage == 'leave-management.php' ? 'active' : '' ?>">
                     <span class="nav-item-icon"><?php include __DIR__ . '/../assets/icons/hr/leave-management.svg'; ?></span>
                     <span class="nav-item-text">Leave Management</span>
@@ -435,10 +435,12 @@ $showAdminSection = canSee(['view_users', 'view_settings', 'view_activity_logs',
         <!-- LOGOUT -->
         <!-- ============================================== -->
         <div class="nav-section" style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-light);">
-            <a href="<?= BASE_PATH ?>/pages/logout.php" class="nav-item" style="color: var(--color-danger);" onclick="return confirm('Are you sure you want to logout?');">
-                <span class="nav-item-icon"><?php include __DIR__ . '/../assets/icons/utility/logout.svg'; ?></span>
-                <span class="nav-item-text">Logout</span>
-            </a>
+            <form action="<?= BASE_PATH ?>/pages/logout.php" method="get" style="margin: 0; padding: 0; display: block;" onsubmit="return confirm('Are you sure you want to logout?');">
+                <button type="submit" class="nav-item" style="width: 100%; background: none; border: none; cursor: pointer; text-align: left; font: inherit; color: var(--color-danger); display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px;">
+                    <span class="nav-item-icon"><?php include __DIR__ . '/../assets/icons/utility/logout.svg'; ?></span>
+                    <span class="nav-item-text">Logout</span>
+                </button>
+            </form>
         </div>
     </nav>
     

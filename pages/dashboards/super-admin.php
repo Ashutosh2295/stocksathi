@@ -271,28 +271,28 @@ function formatCurrency($amount) {
                         <h3 class="card-title">🔐 Role-Based Access Control (RBAC)</h3>
                     </div>
                     <div class="card-body">
-                        <div style="background: #f0fdf4; border: 1px solid #86efac; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
-                            <strong>✅ RBAC System Active!</strong>
-                            <p style="margin: 8px 0 0 0; color: #166534;">
-                                You are logged in as <strong>Super Admin</strong> with full system access and all permissions.
+                        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--color-success); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                            <strong style="color: var(--color-success);">✅ RBAC System Active!</strong>
+                            <p style="margin: 8px 0 0 0; color: var(--color-success);">
+                                You are logged in as <strong style="color: var(--text-primary);">Super Admin</strong> with full system access and all permissions.
                             </p>
                         </div>
                         
                         <div class="grid grid-cols-4 gap-4">
-                            <div style="padding: 12px; border: 1px solid var(--border-light); border-radius: 6px;">
-                                <div style="font-weight: 600; margin-bottom: 4px;">👑 Super Admin</div>
+                            <div style="padding: 12px; border: 1px solid var(--border-light); border-radius: 6px; background: var(--bg-surface);">
+                                <div style="font-weight: 600; margin-bottom: 4px; color: var(--text-primary);">👑 Super Admin</div>
                                 <div style="font-size: 13px; color: var(--text-secondary);">Full access to all features</div>
                             </div>
-                            <div style="padding: 12px; border: 1px solid var(--border-light); border-radius: 8px;">
-                                <div style="font-weight: 600; margin-bottom: 4px;">🏪 Store Manager</div>
+                            <div style="padding: 12px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-surface);">
+                                <div style="font-weight: 600; margin-bottom: 4px; color: var(--text-primary);">🏪 Store Manager</div>
                                 <div style="font-size: 13px; color: var(--text-secondary);">Daily operations & sales</div>
                             </div>
-                            <div style="padding: 12px; border: 1px solid var(--border-light); border-radius: 8px;">
-                                <div style="font-weight: 600; margin-bottom: 4px;">💼 Accountant</div>
+                            <div style="padding: 12px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-surface);">
+                                <div style="font-weight: 600; margin-bottom: 4px; color: var(--text-primary);">💼 Accountant</div>
                                 <div style="font-size: 13px; color: var(--text-secondary);">Finance & GST compliance</div>
                             </div>
-                            <div style="padding: 12px; border: 1px solid var(--border-light); border-radius: 8px;">
-                                <div style="font-weight: 600; margin-bottom: 4px;">🛒 Sales Executive</div>
+                            <div style="padding: 12px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-surface);">
+                                <div style="font-weight: 600; margin-bottom: 4px; color: var(--text-primary);">🛒 Sales Executive</div>
                                 <div style="font-size: 13px; color: var(--text-secondary);">Billing & customer service</div>
                             </div>
                         </div>

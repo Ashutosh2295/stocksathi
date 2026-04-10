@@ -87,36 +87,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $data = Validator::sanitize($_POST);
                 
-                // Check if email already exists
-                $existing = $db->queryOne("SELECT id FROM users WHERE {$orgFilter} email = ?", [$data['email']]);
-                if ($existing) {
-                    $message = 'Email already exists';
+                $username = trim((string)($data['email'] ?? ''));
+                if ($username === '') {
+                    $message = 'Email is required for username';
                     $messageType = 'error';
                 } else {
-                    // Hash password
-                    $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
-                    // username is NOT NULL UNIQUE - use email so it's unique and login-by-email works
-                    $username = trim((string)($data['email'] ?? ''));
-                    if ($username === '') {
-                        $message = 'Email is required for username';
+                    // Check globally if username/email exists to prevent DB exception
+                    $existingGlobal = $db->queryOne("SELECT id FROM users WHERE email = ? OR username = ?", [$data['email'], $username]);
+                    if ($existingGlobal) {
+                        $message = 'User with this email already exists in the system';
                         $messageType = 'error';
                     } else {
-                    $dailyTarget = 0;
-                    if (in_array($data['role'] ?? '', ['sales_executive', 'store_manager']) && isset($data['daily_sales_target']) && $data['daily_sales_target'] !== '') {
-                        $dailyTarget = max(0, (float)$data['daily_sales_target']);
-                    }
-                    $dailyTarget = $dailyTarget > 0 ? $dailyTarget : (in_array($data['role'] ?? '', ['sales_executive', 'store_manager']) ? 10000 : 0);
-                    $query = "INSERT INTO users (username, full_name, email, password, role, status, daily_sales_target, organization_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-                    $id = $db->execute($query, [
-                        $username,
-                        $data['full_name'],
-                        $data['email'],
-                        $hashedPassword,
-                        $data['role'],
-                        $data['status'] ?? 'active',
-                        $dailyTarget,
-                        $orgIdPatch
-                    ]);
+                        // Hash password
+                        $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+                        $dailyTarget = 0;
+                        if (in_array($data['role'] ?? '', ['sales_executive', 'store_manager']) && isset($data['daily_sales_target']) && $data['daily_sales_target'] !== '') {
+                            $dailyTarget = max(0, (float)$data['daily_sales_target']);
+                        }
+                        $dailyTarget = $dailyTarget > 0 ? $dailyTarget : (in_array($data['role'] ?? '', ['sales_executive', 'store_manager']) ? 10000 : 0);
+                        $query = "INSERT INTO users (username, full_name, email, password, role, status, daily_sales_target, organization_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                        $id = $db->execute($query, [
+                            $username,
+                            $data['full_name'],
+                            $data['email'],
+                            $hashedPassword,
+                            $data['role'],
+                            $data['status'] ?? 'active',
+                            $dailyTarget,
+                            $orgIdPatch
+                        ]);
 
                     // Auto-link/create employee record for HR users
                     if (($data['role'] ?? '') === 'hr') {
@@ -150,49 +149,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $data = Validator::sanitize($_POST);
                 
-                // Check if email already exists for another user
-                $existing = $db->queryOne("SELECT id FROM users WHERE {$orgFilter} email = ? AND id != ?", [$data['email'], $data['id']]);
-                if ($existing) {
-                    $message = 'Email already exists for another user';
+                $username = trim((string)($data['email'] ?? ''));
+                if ($username === '') {
+                    $message = 'Email is required';
                     $messageType = 'error';
                 } else {
-                    // Update user (username kept in sync with email for login)
-                    $username = trim((string)($data['email'] ?? ''));
-                    if ($username === '') {
-                        $message = 'Email is required';
+                    // Check globally if email/username already exists for another user
+                    $existingGlobal = $db->queryOne("SELECT id FROM users WHERE (email = ? OR username = ?) AND id != ?", [$data['email'], $username, $data['id']]);
+                    if ($existingGlobal) {
+                        $message = 'Email already exists for another user in the system';
                         $messageType = 'error';
                     } else {
-                    $dailyTarget = 0;
-                    if (in_array($data['role'] ?? '', ['sales_executive', 'store_manager']) && isset($data['daily_sales_target']) && $data['daily_sales_target'] !== '') {
-                        $dailyTarget = max(0, (float)$data['daily_sales_target']);
-                    }
-                    if (!empty($data['password'])) {
-                        // Update with password
-                        $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
-                        $query = "UPDATE users SET username = ?, full_name = ?, email = ?, password = ?, role = ?, status = ?, daily_sales_target = ? WHERE {$orgFilter} id = ?";
-                        $affected = $db->execute($query, [
-                            $username,
-                            $data['full_name'],
-                            $data['email'],
-                            $hashedPassword,
-                            $data['role'],
-                            $data['status'] ?? 'active',
-                            $dailyTarget,
-                            $data['id']
-                        ]);
-                    } else {
-                        // Update without password
-                        $query = "UPDATE users SET username = ?, full_name = ?, email = ?, role = ?, status = ?, daily_sales_target = ? WHERE {$orgFilter} id = ?";
-                        $affected = $db->execute($query, [
-                            $username,
-                            $data['full_name'],
-                            $data['email'],
-                            $data['role'],
-                            $data['status'] ?? 'active',
-                            $dailyTarget,
-                            $data['id']
-                        ]);
-                    }
+                        $dailyTarget = 0;
+                        if (in_array($data['role'] ?? '', ['sales_executive', 'store_manager']) && isset($data['daily_sales_target']) && $data['daily_sales_target'] !== '') {
+                            $dailyTarget = max(0, (float)$data['daily_sales_target']);
+                        }
+                        if (!empty($data['password'])) {
+                            // Update with password
+                            $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+                            $query = "UPDATE users SET username = ?, full_name = ?, email = ?, password = ?, role = ?, status = ?, daily_sales_target = ? WHERE {$orgFilter} id = ?";
+                            $affected = $db->execute($query, [
+                                $username,
+                                $data['full_name'],
+                                $data['email'],
+                                $hashedPassword,
+                                $data['role'],
+                                $data['status'] ?? 'active',
+                                $dailyTarget,
+                                $data['id']
+                            ]);
+                        } else {
+                            // Update without password
+                            $query = "UPDATE users SET username = ?, full_name = ?, email = ?, role = ?, status = ?, daily_sales_target = ? WHERE {$orgFilter} id = ?";
+                            $affected = $db->execute($query, [
+                                $username,
+                                $data['full_name'],
+                                $data['email'],
+                                $data['role'],
+                                $data['status'] ?? 'active',
+                                $dailyTarget,
+                                $data['id']
+                            ]);
+                        }
                     
                     if ($affected > 0) {
                         // If role updated to HR, auto-link/create employee record
@@ -271,7 +269,7 @@ $users = $db->query("SELECT id, full_name, email, role, status, last_login, crea
 
 // Load roles for dropdown
 try {
-    $roles = $db->query("SELECT name FROM roles ORDER BY name");
+    $roles = $db->query("SELECT DISTINCT name FROM roles ORDER BY name");
 } catch (Exception $e) {
     // If roles table doesn't exist, use default roles
     $roles = [

@@ -8,7 +8,7 @@ require_once __DIR__ . '/../../_includes/session_guard.php';
 require_once __DIR__ . '/../../_includes/config.php';
 
 // Require accountant role (or super_admin/admin)
-$allowedRoles = ['super_admin', 'admin', 'accountant'];
+$allowedRoles = ['super_admin', 'admin', 'accountant', 'auditor'];
 if (!in_array(Session::getUserRole(), $allowedRoles)) {
     header('Location: ' . BASE_PATH . '/403.php');
     exit;

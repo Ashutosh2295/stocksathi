@@ -8,7 +8,7 @@ require_once __DIR__ . '/../../_includes/session_guard.php';
 require_once __DIR__ . '/../../_includes/config.php';
 
 // Require admin role or higher
-$allowedRoles = ['super_admin', 'admin'];
+$allowedRoles = ['super_admin', 'admin', 'manager'];
 if (!in_array(Session::getUserRole(), $allowedRoles)) {
     header('Location: ' . BASE_PATH . '/403.php');
     exit;

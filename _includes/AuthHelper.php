@@ -41,8 +41,8 @@ class AuthHelper {
         }
         
         try {
-            $stmt = $db->prepare("SELECT * FROM users WHERE username = ? OR email = ? LIMIT 1");
-            $stmt->execute([$username, $username]);
+            $stmt = $db->prepare("SELECT * FROM users WHERE username = ? OR email = ? OR phone = ? LIMIT 1");
+            $stmt->execute([$username, $username, $username]);
             $user = $stmt->fetch();
             
             if (!$user) {

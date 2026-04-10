@@ -5,14 +5,14 @@
                 <!-- Brand Column -->
                 <div class="col-lg-4 col-md-6">
                     <div class="d-flex align-items-center mb-3">
-                        <img src="images/logo.png" alt="Stock Sathi Logo" style="height: 60px; background: white; padding: 6px; border-radius: 8px;" class="me-3">
+                        <img src="images/logo.png" alt="Stock Sathi Logo" style="height: 65px; margin-top: -10px; margin-bottom: -10px;" class="me-2">
                         <h5 class="fw-bold mb-0">Stock Sathi</h5>
                     </div>
                     <p class="text-white-50">
                         Smart inventory solutions with real-time tracking and powerful analytics to grow your business.            
                     </p>
                     <div class="social-links mt-3">
-                        <a href="#" class="text-white me-3"><i class="bi bi-facebook fs-5"></i></a>
+              lo          <a href="#" class="text-white me-3"><i class="bi bi-facebook fs-5"></i></a>
                         <a href="#" class="text-white me-3"><i class="bi bi-twitter fs-5"></i></a>
                         <a href="#" class="text-white me-3"><i class="bi bi-linkedin fs-5"></i></a>
                         <a href="#" class="text-white me-3"><i class="bi bi-instagram fs-5"></i></a>
@@ -37,8 +37,8 @@
                     <h6 class="fw-bold mb-3">Contact</h6>
                     <ul class="list-unstyled">
                         <li class="mb-2 text-white-50"><i class="bi bi-envelope me-2"></i>info@stocksathi.com</li>
-                        <li class="mb-2 text-white-50"><i class="bi bi-telephone me-2"></i>+91 98765 43210</li>
-                        <li class="mb-2 text-white-50"><i class="bi bi-geo-alt me-2"></i>Mumbai, India</li>
+                        <li class="mb-2 text-white-50"><i class="bi bi-telephone me-2"></i>+91 83470 94796</li>
+                        <li class="mb-2 text-white-50"><i class="bi bi-geo-alt me-2"></i>Ahmedabad, Gujarat, India</li>
                     </ul>
                 </div>
             </div>
@@ -61,5 +61,7 @@
     
     <!-- Custom JS -->
     <script src="js/landing.js"></script>
+
+    <?php require_once __DIR__ . '/../_includes/chatbot_widget.php'; ?>
 </body>
 </html>

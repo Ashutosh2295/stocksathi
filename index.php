@@ -20,7 +20,6 @@ if (Session::isLoggedIn()) {
         'store_manager' => 'pages/dashboards/store-manager.php',
         'sales_executive' => 'pages/dashboards/sales-executive.php',
         'accountant'  => 'pages/dashboards/accountant.php',
-        'warehouse_manager' => 'pages/dashboards/store-manager.php',
     ];
     $target = $dashboards[$role] ?? 'pages/dashboards/general.php';
     header('Location: ' . (defined('BASE_PATH') ? BASE_PATH . '/' : '') . $target);

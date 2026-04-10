@@ -1,4 +1,28 @@
-<?php include 'header.php'; ?>
+<?php
+require_once dirname(__DIR__) . '/_includes/database.php';
+try {
+    $db = Database::getInstance();
+    
+    // Get total active users
+    $userStats = $db->queryOne("SELECT COUNT(*) as count FROM users WHERE status = 'active'");
+    $totalUsers = $userStats ? $userStats['count'] : 0;
+    
+    // Get total products (assets)
+    $productStats = $db->queryOne("SELECT COUNT(*) as count FROM products");
+    $totalProducts = $productStats ? $productStats['count'] : 0;
+    
+    // Get total customers
+    $customerStats = $db->queryOne("SELECT COUNT(*) as count FROM customers");
+    $totalCustomers = $customerStats ? $customerStats['count'] : 0;
+    
+} catch (Exception $e) {
+    // Fallback numbers
+    $totalUsers = 0;
+    $totalProducts = 0;
+    $totalCustomers = 0;
+}
+include 'header.php'; 
+?>
 
 <!-- Hero Section -->
 <section id="home" class="hero-section">
@@ -20,16 +44,16 @@
                 </div>
                 <div class="d-flex gap-4 mt-4">
                     <div class="stat-item">
-                        <h3 class="fw-bold mb-0">10K+</h3>
+                        <h3 class="fw-bold mb-0"><?= number_format($totalUsers) ?>+</h3>
                         <p class="text-white-75 mb-0">Active Users</p>
                     </div>
                     <div class="stat-item">
-                        <h3 class="fw-bold mb-0">₹500Cr+</h3>
+                        <h3 class="fw-bold mb-0"><?= number_format($totalProducts) ?>+</h3>
                         <p class="text-white-75 mb-0">Assets Tracked</p>
                     </div>
                     <div class="stat-item">
-                        <h3 class="fw-bold mb-0">99.9%</h3>
-                        <p class="text-white-75 mb-0">Uptime</p>
+                        <h3 class="fw-bold mb-0"><?= number_format($totalCustomers) ?>+</h3>
+                        <p class="text-white-75 mb-0">Happy Customers</p>
                     </div>
                 </div>
             </div>

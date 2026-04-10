@@ -159,9 +159,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             );
                         }
                         
+                        // Increment coupon usage if applied
+                        if (!empty($data['promotion_id'])) {
+                            $db->execute("UPDATE promotions SET used_count = used_count + 1 WHERE id = ?", [(int)$data['promotion_id']]);
+                        }
+
                         $db->commit();
-                        Session::setFlash('Invoice created successfully: ' . $invoiceNumber . '. Dashboard will now show this sale.', 'success');
-                        header('Location: ' . BASE_PATH . '/pages/dashboards/sales-executive.php');
+                        Session::setFlash('Invoice created successfully: ' . $invoiceNumber, 'success');
+                        header('Location: ' . BASE_PATH . '/pages/invoices.php');
                         exit;
                         
                     } else {
@@ -331,6 +336,7 @@ $paymentModes = $db->query("SELECT id, name FROM payment_modes WHERE is_active =
                         <input type="hidden" name="id" value="<?= $invoice['id'] ?>">
                     <?php endif; ?>
                     <input type="hidden" name="items" id="itemsInput">
+                    <input type="hidden" name="promotion_id" id="promotionIdInput">
                     
                     <div class="grid grid-cols-2 gap-6 mb-6">
                         <!-- Left Column: Customer & Dates -->
@@ -471,6 +477,14 @@ $paymentModes = $db->query("SELECT id, name FROM payment_modes WHERE is_active =
                                     <div class="flex justify-between mb-2">
                                         <span>Tax:</span>
                                         <span id="taxDisplay">₹0.00</span>
+                                    </div>
+                                    <div class="form-group mb-2">
+                                        <label class="form-label">Coupon Code</label>
+                                        <div class="flex gap-2">
+                                            <input type="text" id="couponCodeInput" class="form-control" placeholder="Enter code">
+                                            <button type="button" class="btn btn-outline" onclick="applyCoupon()">Apply</button>
+                                        </div>
+                                        <small id="couponMessage" class="text-secondary" style="display: block; margin-top: 4px;"></small>
                                     </div>
                                     <div class="form-group mb-2">
                                         <label class="form-label">Discount (₹)</label>
@@ -680,18 +694,53 @@ $paymentModes = $db->query("SELECT id, name FROM payment_modes WHERE is_active =
             let discount = parseFloat(discountInput.value);
             if (isNaN(discount) || discount < 0) discount = 0;
             
-            // Prevent discount from exceeding total
-            if (discount > (subtotal + tax)) {
-                // alert('Discount cannot be greater than Total Amount'); // Optional: could be annoying
-                // discount = subtotal + tax;
-                // discountInput.value = discount.toFixed(2);
-            }
-            
             const total = subtotal + tax - discount;
             
             document.getElementById('subtotalDisplay').textContent = '₹' + subtotal.toFixed(2);
             document.getElementById('taxDisplay').textContent = '₹' + tax.toFixed(2);
             document.getElementById('totalDisplay').textContent = '₹' + Math.max(0, total).toFixed(2);
+            
+            return { subtotal, tax, total };
+        }
+
+        async function applyCoupon() {
+            const codeInput = document.getElementById('couponCodeInput');
+            const code = codeInput.value.trim().toUpperCase();
+            const messageEl = document.getElementById('couponMessage');
+            
+            if (!code) {
+                alert('Please enter a coupon code');
+                return;
+            }
+
+            const { subtotal } = calculateTotals();
+            
+            try {
+                const response = await fetch('<?= BASE_PATH ?>/pages/api/validate-coupon.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, subtotal })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const discountInput = document.getElementById('discountInput');
+                    discountInput.value = result.data.discount_amount.toFixed(2);
+                    document.getElementById('promotionIdInput').value = result.data.id;
+                    
+                    messageEl.textContent = '✅ ' + result.message;
+                    messageEl.style.color = 'var(--color-success)';
+                    
+                    calculateTotals();
+                } else {
+                    messageEl.textContent = '❌ ' + result.message;
+                    messageEl.style.color = 'var(--color-danger)';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to validate coupon');
+            }
         }
         
         document.getElementById('invoiceForm').addEventListener('submit', function(e) {

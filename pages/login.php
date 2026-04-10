@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     
     if (empty($email) || empty($password)) {
-        $error = 'Please enter both email and password';
+        $error = 'Please enter email/phone and password';
     } else {
         try {
             $result = AuthHelper::login($email, $password);
@@ -533,14 +533,16 @@ $remembered_email = isset($_COOKIE['user_email']) ? $_COOKIE['user_email'] : '';
                 
                 <form method="POST" action="" class="auth-form">
                     <div class="input-group">
-                        <label for="email">Email</label>
+                        <label for="email">Email or Mobile Number</label>
                         <div class="input-wrapper">
                             <svg class="input-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
                                 <path d="M2.5 6.66667L10 11.6667L17.5 6.66667M3.33333 15H16.6667C17.5871 15 18.3333 14.2538 18.3333 13.3333V6.66667C18.3333 5.74619 17.5871 5 16.6667 5H3.33333C2.41286 5 1.66667 5.74619 1.66667 6.66667V13.3333C1.66667 14.2538 2.41286 15 3.33333 15Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
-                            <input type="email" id="email" name="email" placeholder="Enter your email" 
-                                   value="<?= htmlspecialchars($remembered_email); ?>" required>
+                            <input type="text" id="email" name="email" placeholder="Enter your email or 10-digit mobile" 
+                                   value="<?= htmlspecialchars($remembered_email); ?>" required 
+                                   oninput="validateLoginIdentifier()">
                         </div>
+                        <div class="validation-msg" id="msg_email"></div>
                     </div>
                     
                     <div class="input-group">
@@ -568,7 +570,7 @@ $remembered_email = isset($_COOKIE['user_email']) ? $_COOKIE['user_email'] : '';
                             <span class="checkmark"></span>
                             <span>Remember me</span>
                         </label>
-                        <a href="#" class="forgot-password">Forgot password?</a>
+                        <a href="forgot-password.php" class="forgot-password">Forgot password?</a>
                     </div>
                     
                     <button type="submit" name="login" class="btn-primary">
@@ -603,6 +605,53 @@ $remembered_email = isset($_COOKIE['user_email']) ? $_COOKIE['user_email'] : '';
             }
         }
         
+        function validateLoginIdentifier() {
+            const input = document.getElementById('email');
+            const val = input.value.trim();
+            const msgEl = document.getElementById('msg_email');
+            
+            // Check if it looks like an email OR 10-digit phone
+            let isValid = false;
+            let msg = '';
+            
+            if (/^\d+$/.test(val)) {
+                // Numbers only -> assume phone
+                if (val.length === 10) {
+                    isValid = true;
+                } else {
+                    msg = 'Please enter exactly 10 digits for mobile number.';
+                }
+            } else {
+                // Check email format
+                if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                    isValid = true;
+                } else if (val.length > 0) {
+                    msg = 'Please enter a valid email address.';
+                }
+            }
+            
+            if (isValid) {
+                input.style.borderColor = '#10b981';
+                msgEl.style.color = '#10b981';
+                msgEl.style.display = 'block';
+                msgEl.style.fontSize = '12px';
+                msgEl.style.marginTop = '4px';
+                msgEl.textContent = 'Ok!';
+            } else {
+                if(val.length > 0) {
+                    input.style.borderColor = '#ef4444';
+                    msgEl.style.color = '#ef4444';
+                    msgEl.style.display = 'block';
+                    msgEl.style.fontSize = '12px';
+                    msgEl.style.marginTop = '4px';
+                    msgEl.textContent = msg;
+                } else {
+                    input.style.borderColor = '';
+                    msgEl.style.display = 'none';
+                }
+            }
+        }
+
         // Auto-hide alerts after 5 seconds
         setTimeout(() => {
             const alerts = document.querySelectorAll('.alert');

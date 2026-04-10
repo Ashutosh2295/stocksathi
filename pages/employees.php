@@ -14,6 +14,27 @@ $orgIdPatch = isset($_SESSION['organization_id']) ? $_SESSION['organization_id']
 $orgFilter = $orgIdPatch ? " organization_id = " . intval($orgIdPatch) . " AND " : "";
 $orgWhere = $orgIdPatch ? " WHERE organization_id = " . intval($orgIdPatch) . " " : "";
 
+// Handle Delete Request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete') {
+    $id = $_POST['id'] ?? null;
+    if ($id) {
+        try {
+            $db->execute("UPDATE employees SET status = 'inactive' WHERE id = ?" . ($orgIdPatch ? " AND organization_id = " . intval($orgIdPatch) : ""), [$id]);
+            Session::setFlash('Employee deactivated successfully', 'success');
+        } catch (Exception $e) {
+            Session::setFlash('Error deactivating employee: ' . $e->getMessage(), 'error');
+        }
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    }
+}
+
+// Get flash message if any
+$flash = Session::getFlash();
+$message = $flash['message'] ?? '';
+$messageType = $flash['type'] ?? '';
+
+
 // Load all employees with department info
 $query = "SELECT e.*, 
           d.name as department_name
@@ -55,6 +76,12 @@ $employees = $db->query($query);
                         </a>
                     </div>
                 </div>
+
+                <?php if ($message): ?>
+                    <div class="alert alert-<?= $messageType === 'success' ? 'success' : 'danger' ?>" style="margin-bottom: 20px;">
+                        <?= htmlspecialchars($message) ?>
+                    </div>
+                <?php endif; ?>
                 
                 <div class="card">
                     <div class="card-header">
@@ -97,6 +124,11 @@ $employees = $db->query($query);
                                             </td>
                                             <td class="table-actions">
                                                 <a href="employee-form.php?id=<?= $employee['id'] ?>" class="btn btn-ghost btn-sm" title="Edit">✏️</a>
+                                                <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to deactivate <?= htmlspecialchars(addslashes(trim(($employee['first_name'] ?? '') . ' ' . ($employee['last_name'] ?? '')))) ?>?');">
+                                                    <input type="hidden" name="action" value="delete">
+                                                    <input type="hidden" name="id" value="<?= $employee['id'] ?>">
+                                                    <button type="submit" class="btn btn-ghost btn-sm" title="Deactivate">🗑️</button>
+                                                </form>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>

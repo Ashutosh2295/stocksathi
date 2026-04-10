@@ -65,12 +65,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $db->execute($query, [$organizationId, $key, $value, $group]);
                 }
             }
+
+            // Sync with organizations table
+            if ($action === 'save_company') {
+                $db->execute("UPDATE organizations SET 
+                    name = ?, email = ?, phone = ?, address = ?, city = ?, state = ?, pincode = ?, gst_number = ?, pan_number = ? 
+                    WHERE id = ?", 
+                    [$_POST['company_name'], $_POST['email'], $_POST['phone'], $_POST['address'], $_POST['city'], $_POST['state'], $_POST['pincode'], $_POST['gstin'], $_POST['pan'], $organizationId]
+                );
+            }
             
             $db->commit();
             Session::setFlash(ucfirst($group) . ' settings saved successfully', 'success');
             
             // Stay on the same tab
             header("Location: " . $_SERVER['PHP_SELF'] . "#" . $group);
+            exit;
+        } else if ($action === 'save_theme') {
+            $group = 'theme';
+            $colorScheme = $_POST['theme_color_scheme'] ?? 'Blue';
+            $mode = $_POST['theme_mode'] ?? 'light';
+            
+            $db->execute("INSERT INTO organization_settings (organization_id, setting_key, setting_value, setting_group) VALUES (?, 'theme_color_scheme', ?, 'theme') ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [$organizationId, $colorScheme]);
+            $db->execute("INSERT INTO organization_settings (organization_id, setting_key, setting_value, setting_group) VALUES (?, 'theme_mode_preference', ?, 'theme') ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [$organizationId, $mode]);
+            
+            Session::setFlash('Theme settings saved successfully', 'success');
+            header("Location: " . $_SERVER['PHP_SELF'] . "#theme");
             exit;
         }
     } catch (Exception $e) {
@@ -97,6 +117,38 @@ if ($organizationId) {
 function get_setting($key, $default = '', $settings = []) {
     return $settings[$key] ?? $default;
 }
+
+// Get organization details to merge with settings and act as fallback
+$orgDetails = [];
+if ($organizationId) {
+    $orgDetails = $db->queryOne("SELECT * FROM organizations WHERE id = ?", [$organizationId]);
+    if ($orgDetails) {
+        $settings['company_name'] = get_setting('company_name', $orgDetails['name'] ?? '', $settings);
+        $settings['email'] = get_setting('email', $orgDetails['email'] ?? '', $settings);
+        $settings['phone'] = get_setting('phone', $orgDetails['phone'] ?? '', $settings);
+        $settings['address'] = get_setting('address', $orgDetails['address'] ?? '', $settings);
+        $settings['city'] = get_setting('city', $orgDetails['city'] ?? '', $settings);
+        $settings['state'] = get_setting('state', $orgDetails['state'] ?? '', $settings);
+        $settings['pincode'] = get_setting('pincode', $orgDetails['pincode'] ?? '', $settings);
+        $settings['gstin'] = get_setting('gstin', $orgDetails['gst_number'] ?? '', $settings);
+        $settings['pan'] = get_setting('pan', $orgDetails['pan_number'] ?? '', $settings);
+    }
+}
+
+// Compute financial year dynamically
+$fyStart = get_setting('financial_year_start', '04-01', $settings);
+$currMonthDay = date('m-d');
+$currYear = (int)date('Y');
+if ($currMonthDay < $fyStart) {
+    if (strpos($fyStart, '-01') !== false) {
+        $fyStr = ($currYear - 1) . '-' . $currYear;
+    } else {
+        $fyStr = ($currYear - 1) . '-' . $currYear;
+    }
+} else {
+    $fyStr = $currYear . '-' . ($currYear + 1);
+}
+if ($fyStart === '01-01') $fyStr = $currYear; // If Jan 1st, it's just the current year usually
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -111,7 +163,19 @@ function get_setting($key, $default = '', $settings = []) {
     <link rel="stylesheet" href="<?= CSS_PATH ?>/nav-dropdown.css">
     <!-- Theme Manager - Load early to apply theme before page renders -->
     <script src="<?= BASE_PATH ?>/js/theme-manager.js"></script>
+    <script src="<?= BASE_PATH ?>/js/theme-manager.js"></script>
     <script>
+        // Sync DB Theme into localStorage to override strictly client-side settings
+        <?php 
+        $dbThemeScheme = get_setting('theme_color_scheme', '', $settings);
+        $dbThemeMode = get_setting('theme_mode_preference', '', $settings);
+        if ($dbThemeScheme): ?>
+            localStorage.setItem('themeColorScheme', '<?= htmlspecialchars($dbThemeScheme) ?>');
+        <?php endif; ?>
+        <?php if ($dbThemeMode): ?>
+            localStorage.setItem('themeModePreference', '<?= htmlspecialchars($dbThemeMode) ?>');
+        <?php endif; ?>
+        
         // Tab Persistence
         document.addEventListener('DOMContentLoaded', function() {
             const hash = window.location.hash.substring(1);
@@ -284,7 +348,7 @@ function get_setting($key, $default = '', $settings = []) {
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Current Financial Year</label>
-                                    <input type="text" class="form-control" value="<?= date('Y') . '-' . (date('Y') + 1) ?>" readonly>
+                                    <input type="text" class="form-control" value="<?= htmlspecialchars($fyStr) ?>" readonly>
                                 </div>
                                 <div class="alert alert-info">
                                     <strong>Note:</strong> Changing financial year settings may affect reporting. Please
@@ -342,14 +406,18 @@ function get_setting($key, $default = '', $settings = []) {
                             <h3 class="card-title">Theme Settings</h3>
                         </div>
                         <div class="card-body">
-                            <div class="form-group">
-                                <label class="form-label">Color Scheme</label>
-                                <select id="colorSchemeSelect" class="form-control" onchange="previewColorScheme(this.value)">
-                                    <option value="Teal (Default)">Teal (Default)</option>
-                                    <option value="Blue" selected>Blue</option>
-                                    <option value="Green">Green</option>
-                                    <option value="Purple">Purple</option>
-                                </select>
+                            <form method="POST">
+                                <input type="hidden" name="action" value="save_theme">
+                                <input type="hidden" name="theme_mode" id="themeModeInput" value="<?= htmlspecialchars(get_setting('theme_mode_preference', 'light', $settings)) ?>">
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Color Scheme</label>
+                                    <select name="theme_color_scheme" id="colorSchemeSelect" class="form-control" onchange="previewColorScheme(this.value)">
+                                                <option value="Teal (Default)" <?= get_setting('theme_color_scheme', 'Blue', $settings) === 'Teal (Default)' ? 'selected' : '' ?>>Teal (Default)</option>
+                                                <option value="Blue" <?= get_setting('theme_color_scheme', 'Blue', $settings) === 'Blue' ? 'selected' : '' ?>>Blue</option>
+                                                <option value="Green" <?= get_setting('theme_color_scheme', 'Blue', $settings) === 'Green' ? 'selected' : '' ?>>Green</option>
+                                                <option value="Purple" <?= get_setting('theme_color_scheme', 'Blue', $settings) === 'Purple' ? 'selected' : '' ?>>Purple</option>
+                                    </select>
                                 <small style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">
                                     Select a color scheme to change the primary accent colors throughout the application
                                 </small>
@@ -383,7 +451,9 @@ function get_setting($key, $default = '', $settings = []) {
                                     Choose how the application should appear. Auto mode follows your system's dark/light preference.
                                 </small>
                             </div>
-                            <button class="btn btn-primary" onclick="saveThemeSettings()">Save Changes</button>
+                            <button type="submit" class="btn btn-primary" onclick="saveThemeFrontendState()">Save Changes</button>
+                            </form>
+                            
                             <div id="themeSaveMessage" style="display: none; margin-top: 12px; padding: 12px; background: #D1FAE5; color: #059669; border-radius: 8px; font-size: 14px;">
                                 ✓ Theme settings saved successfully!
                             </div>
@@ -579,37 +649,42 @@ function get_setting($key, $default = '', $settings = []) {
             previewMode(savedMode);
         }
         
-        // Save theme settings
+        // Sync JS mode with hidden form input
+        function setFormThemeMode(mode) {
+             const input = document.getElementById('themeModeInput');
+             if (input) input.value = mode;
+        }
+        
+        // Update form inputs prior to submit if needed
+        function saveThemeFrontendState() {
+             const colorSchemeSelect = document.getElementById('colorSchemeSelect');
+             const colorScheme = colorSchemeSelect ? colorSchemeSelect.value : 'Blue';
+             const selectedModeCard = document.querySelector('.theme-mode-card[style*="border: 2px"]');
+             const mode = selectedModeCard ? selectedModeCard.dataset.mode : 'light';
+             
+             setFormThemeMode(mode);
+             
+             // Apply temporarily via manager before refresh completes the save
+             if (window.themeManager) {
+                 window.themeManager.applyColorScheme(colorScheme);
+                 window.themeManager.applyMode(mode);
+             } else {
+                 localStorage.setItem('themeColorScheme', colorScheme);
+                 localStorage.setItem('themeModePreference', mode);
+             }
+        }
+        
+        // Ensure previewMode function sets the form input
+        const originalPreviewMode = previewMode;
+        previewMode = function(mode) {
+            originalPreviewMode(mode);
+            setFormThemeMode(mode);
+        }
+        
+        // Save theme settings wrapper completely replaced by form sumbission handle.
+        // Keep to not break missing references
         function saveThemeSettings() {
-            const colorSchemeSelect = document.getElementById('colorSchemeSelect');
-            const colorScheme = colorSchemeSelect ? colorSchemeSelect.value : 'Blue';
-            
-            const selectedModeCard = document.querySelector('.theme-mode-card[style*="border: 2px"]');
-            const mode = selectedModeCard ? selectedModeCard.dataset.mode : 'light';
-            
-            // Apply theme using theme manager
-            if (window.themeManager) {
-                window.themeManager.applyColorScheme(colorScheme);
-                window.themeManager.applyMode(mode);
-            } else {
-                // Fallback if theme manager not loaded
-                localStorage.setItem('themeColorScheme', colorScheme);
-                localStorage.setItem('themeModePreference', mode);
-                
-                // Trigger page reload to apply theme
-                setTimeout(() => {
-                    window.location.reload();
-                }, 500);
-            }
-            
-            // Show success message
-            const messageDiv = document.getElementById('themeSaveMessage');
-            if (messageDiv) {
-                messageDiv.style.display = 'block';
-                setTimeout(() => {
-                    messageDiv.style.display = 'none';
-                }, 3000);
-            }
+             saveThemeFrontendState();
         }
     </script>
 </body>
